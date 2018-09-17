@@ -184,11 +184,19 @@ def main(args, gpus):
         return True
         
 
+    queries = []
+    query_distances = []
+    current_query, prev_query = adv, adv
+
     # MAIN LOOP
     for i in range(max_iters):
         start = time.time()
         if args.visualize:
             render_frame(sess, adv, i, render_logits, render_feed, out_dir)
+
+        # RECORD DISTANCE BETWEEN QUERIES 
+        l2_dist = np.lingalg.norm(current_query - prev_query)
+        query_distances.append(l2_dist)
 
         # CHECK IF WE SHOULD STOP
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
@@ -269,8 +277,15 @@ def main(args, gpus):
         if (i+1) % args.save_iters == 0 and args.save_iters > 0:
             np.save(os.path.join(out_dir, '%s.npy' % (i+1)), adv)
             scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (i+1)), adv)
+
+    print("Average query distance:", np.mean(query_distances))
+    
     log_output(sess, eval_logits, eval_preds, x, adv, initial_img, \
             target_class, out_dir, orig_class, num_queries)
+
+    import datetime 
+    timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
+    np.savez("query_distances_%s" % timestamp, dists=query_distances)
 
 if __name__ == '__main__':
     main()
