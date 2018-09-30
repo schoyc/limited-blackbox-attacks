@@ -1,1 +1,1 @@
-python main.py --img-path ./sample_data/lionfish.jpg --orig-class 396 --gpus 1 --target-class -1 --max-queries 1000000 --top-k 1 --out-dir label_only/ --adv-thresh 0.15 --sigma 1e-3 --plateau-length 20 --samples-per-draw 100 --batch-size 4 --min-lr 1e-4 --label-only --zero-iters 50 --label-only-sigma 2e-3 --conservative 4 
+python main.py --max-queries 1000000 --top-k 1 --img-index 0 --out-dir label_only/ --adv-thresh 0.15 --sigma 1e-3 --plateau-length 20 --samples-per-draw 100 --batch-size 4 --min-lr 1e-4 --label-only --zero-iters 50 --label-only-sigma 2e-3 --conservative 4 

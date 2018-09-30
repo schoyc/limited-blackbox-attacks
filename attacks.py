@@ -15,30 +15,38 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from tools.logging_utils import *
 
-from tools.inception_v3_imagenet import model
-from tools.imagenet_labels import label_to_name
+# from tools.inception_v3_imagenet import model
+# from tools.imagenet_labels import label_to_name
+from tools.tf_sample_cifar10 import model
+from keras.datasets import cifar10
 
 IMAGENET_PATH=""
-NUM_LABELS=1000
-SIZE = 299
+NUM_LABELS=10
+SIZE = 32
 
 def main(args, gpus):
     # INITIAL IMAGE AND CLASS SELECTION
+    (_, _), (x_test, y_test) = cifar10.load_data()
+    img_index = np.random.randint(0, x_test.shape[0])
+
     if args.img_path:
         initial_img = np.asarray(Image.open(args.img_path).resize((SIZE, SIZE)))
         orig_class = args.orig_class
         initial_img = initial_img.astype(np.float32) / 255.0
     else:
-        x, y = get_image(args.img_index, IMAGENET_PATH)
+        x, y = x_test[img_index, None], y_test[img_index, None]
         orig_class = y
         initial_img = x
+        print('LOG: Chose test image (%d) of class (%d)' % (img_index, orig_class))
 
     # PARAMETER SETUP
     if args.target_class is None:
-        target_class = pseudorandom_target(args.img_index, NUM_LABELS, orig_class)
+        target_class = pseudorandom_target(img_index, NUM_LABELS, orig_class)
         print('chose pseudorandom target class: %d' % target_class)
     else:
         target_class = args.target_class
+
+
     batch_size = args.batch_size
     out_dir = args.out_dir
     epsilon = args.epsilon
@@ -132,9 +140,9 @@ def main(args, gpus):
     final_losses = []
     loss_fn = label_only_loss if label_only else \
                 (partial_info_loss if k < NUM_LABELS else standard_loss)
-    for i, device in enumerate(gpus):
+    for img_index, device in enumerate(gpus):
         with tf.device(device):
-            print('loading on gpu %d of %d' % (i+1, len(gpus)))
+            print('loading on gpu %d of %d' % (img_index+1, len(gpus)))
             noise_pos = tf.random_normal((batch_per_gpu//2,) + initial_img.shape)
             noise = tf.concat([noise_pos, -noise_pos], axis=0)
             eval_points = x + args.sigma * noise
@@ -189,10 +197,10 @@ def main(args, gpus):
     current_query, prev_query = adv, adv
 
     # MAIN LOOP
-    for i in range(max_iters):
+    for img_index in range(max_iters):
         start = time.time()
         if args.visualize:
-            render_frame(sess, adv, i, render_logits, render_feed, out_dir)
+            render_frame(sess, adv, img_index, render_logits, render_feed, out_dir)
 
         # RECORD DISTANCE BETWEEN QUERIES 
         l2_dist = np.lingalg.norm(current_query - prev_query)
@@ -201,7 +209,7 @@ def main(args, gpus):
         # CHECK IF WE SHOULD STOP
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
         if padv == 1 and epsilon <= goal_epsilon:
-            print('[log] early stopping at iteration %d' % i)
+            print('[log] early stopping at iteration %d' % img_index)
             break
 
         prev_g = g
@@ -258,12 +266,12 @@ def main(args, gpus):
 
         # BOOK-KEEPING STUFF
         num_queries += args.samples_per_draw
-        log_text = 'Step %05d: loss %.4f lr %.2E eps %.3f (time %.4f)' % (i, l, \
+        log_text = 'Step %05d: loss %.4f lr %.2E eps %.3f (time %.4f)' % (img_index, l, \
                         current_lr, epsilon, time.time() - start)
         log_file.write(log_text + '\n')
         print(log_text)
 
-        if i % log_iters == 0:
+        if img_index % log_iters == 0:
             lvq, lvs, lrvq, lrvs = sess.run([loss_vs_queries, loss_vs_steps,
                                              lr_vs_queries, lr_vs_steps], {
                                                  empirical_loss:l,
@@ -271,12 +279,12 @@ def main(args, gpus):
                                              })
             writer.add_summary(lvq, num_queries)
             writer.add_summary(lrvq, num_queries)
-            writer.add_summary(lvs, i)
-            writer.add_summary(lrvs, i)
+            writer.add_summary(lvs, img_index)
+            writer.add_summary(lrvs, img_index)
 
-        if (i+1) % args.save_iters == 0 and args.save_iters > 0:
-            np.save(os.path.join(out_dir, '%s.npy' % (i+1)), adv)
-            scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (i+1)), adv)
+        if (img_index+1) % args.save_iters == 0 and args.save_iters > 0:
+            np.save(os.path.join(out_dir, '%s.npy' % (img_index+1)), adv)
+            scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (img_index+1)), adv)
 
     print("Average query distance:", np.mean(query_distances))
     
