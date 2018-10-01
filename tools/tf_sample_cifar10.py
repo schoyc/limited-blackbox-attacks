@@ -52,7 +52,7 @@ def model(sess, image):
     size = SIZE
 
     preprocessed = _preprocess(image, size, size)
-    logits, _ = network_fn(preprocessed)
+    logits = network_fn(preprocessed)
     # logits = logits[:,1:] # ignore background class
     predictions = tf.argmax(logits, 1)
 
