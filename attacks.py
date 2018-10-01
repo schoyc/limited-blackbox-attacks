@@ -90,7 +90,11 @@ def main(args, gpus):
     is_targeted = 1 if target_class >= 0 else -1
 
     # SESSION INITIALIZATION
-    sess = tf.InteractiveSession()
+    config_sess = tf.ConfigProto()
+    config_sess.gpu_options.allow_growth = True
+    # sess = tf.Session(config=config_sess)
+
+    sess = tf.InteractiveSession(config=config_sess)
     x = tf.placeholder(tf.float32, initial_img.shape)
     eval_logits, eval_preds = model(sess, tf.expand_dims(x, 0))
     eval_percent_adv = tf.equal(eval_preds[0], tf.constant(target_class, tf.int64))
