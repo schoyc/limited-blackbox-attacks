@@ -207,7 +207,7 @@ def main(args, gpus):
             render_frame(sess, adv, img_index, render_logits, render_feed, out_dir)
 
         # RECORD DISTANCE BETWEEN QUERIES 
-        l2_dist = np.lingalg.norm(current_query - prev_query)
+        l2_dist = np.linalg.norm(current_query - prev_query)
         query_distances.append(l2_dist)
 
         # CHECK IF WE SHOULD STOP
@@ -297,7 +297,7 @@ def main(args, gpus):
 
     import datetime 
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
-    np.savez("query_distances_%s" % timestamp, dists=query_distances)
+    np.savez("query_distances_i%d_o%d_t%d_iters%d_%s" % (img_index, orig_class, target_class, max_iters, timestamp), dists=query_distances)
 
 if __name__ == '__main__':
     main()
