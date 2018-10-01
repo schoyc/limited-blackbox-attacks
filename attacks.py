@@ -67,7 +67,10 @@ def main(args, gpus):
     if k > 0:
         if target_class == -1:
             raise ValueError("Partial-information attack is a targeted attack.")
-        adv = image_of_class(target_class, IMAGENET_PATH)
+        # adv = image_of_class(target_class, IMAGENET_PATH)
+        y_target_class = y_test[y_test == target_class]
+        i = np.random.randint(0, y_target_class.shape[0])
+        adv = y_target_class[i, None]
         epsilon = args.starting_eps
         delta_epsilon = args.starting_delta_eps
     else:
