@@ -34,7 +34,7 @@ def main(args, gpus):
         orig_class = args.orig_class
         initial_img = initial_img.astype(np.float32) / 255.0
     else:
-        x, y = x_test[img_index, None], y_test[img_index, None]
+        x, y = x_test[img_index, None][0], y_test[img_index][0]
         orig_class = y
         initial_img = x
         print('LOG: Chose test image (%d) of class (%d)' % (img_index, orig_class))
@@ -68,9 +68,9 @@ def main(args, gpus):
         if target_class == -1:
             raise ValueError("Partial-information attack is a targeted attack.")
         # adv = image_of_class(target_class, IMAGENET_PATH)
-        y_target_class = y_test[y_test == target_class]
-        i = np.random.randint(0, y_target_class.shape[0])
-        adv = y_target_class[i, None]
+        x_test_target_class = x_test[y_test == target_class]
+        i = np.random.randint(0, x_test_target_class.shape[0])
+        adv = x_test_target_class[i, None][0]
         epsilon = args.starting_eps
         delta_epsilon = args.starting_delta_eps
     else:
@@ -91,7 +91,7 @@ def main(args, gpus):
     # SESSION INITIALIZATION
     sess = tf.InteractiveSession()
     x = tf.placeholder(tf.float32, initial_img.shape)
-    eval_logits, eval_preds = model(sess, x)
+    eval_logits, eval_preds = model(sess, tf.expand_dims(x, 0))
     eval_percent_adv = tf.equal(eval_preds[0], tf.constant(target_class, tf.int64))
 
     # TENSORBOARD SETUP
