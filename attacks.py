@@ -91,7 +91,7 @@ def main(args, gpus):
     # SESSION INITIALIZATION
     sess = tf.InteractiveSession()
     x = tf.placeholder(tf.float32, initial_img.shape)
-    eval_logits, eval_preds = model(sess, tf.expand_dims(x, 0))
+    eval_logits, eval_preds = model(sess, x)
     eval_percent_adv = tf.equal(eval_preds[0], tf.constant(target_class, tf.int64))
 
     # TENSORBOARD SETUP
