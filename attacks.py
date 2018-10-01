@@ -18,7 +18,7 @@ from tools.logging_utils import *
 # from tools.inception_v3_imagenet import model
 # from tools.imagenet_labels import label_to_name
 from tools.tf_sample_cifar10 import model
-from keras.datasets import cifar10
+from tensorflow.keras.datasets import cifar10
 
 IMAGENET_PATH=""
 NUM_LABELS=10

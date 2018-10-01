@@ -4,7 +4,7 @@ from tensorflow.python.framework import ops
 import numpy as np
 import os
 import pickle
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 
 def image_of_class(y, imagenet_path=None):
     """
