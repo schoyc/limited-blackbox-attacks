@@ -5,8 +5,10 @@ import tensorflow as tf
 # SESSION INITIALIZATION
 config_sess = tf.ConfigProto()
 config_sess.gpu_options.allow_growth = True
+config_sess.gpu_options.per_process_gpu_memory_fraction = 0.5
 # sess = tf.Session(config=config_sess)
 sess = tf.InteractiveSession(config=config_sess)
+
 
 from tools.utils import *
 import json
