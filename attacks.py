@@ -205,17 +205,13 @@ def main(args, gpus):
 
     queries = []
     query_distances = []
-    current_query, prev_query = adv, adv
+    current_query, prev_query = adv, prev_adv
 
     # MAIN LOOP
     for img_index in range(max_iters):
         start = time.time()
         if args.visualize:
             render_frame(sess, adv, img_index, render_logits, render_feed, out_dir)
-
-        # RECORD DISTANCE BETWEEN QUERIES 
-        l2_dist = np.linalg.norm(current_query - prev_query)
-        query_distances.append(l2_dist)
 
         # CHECK IF WE SHOULD STOP
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
@@ -262,6 +258,13 @@ def main(args, gpus):
                 prev_adv = adv
                 adv = proposed_adv
                 epsilon = max(epsilon - prop_de/args.conservative, goal_epsilon)
+
+                current_query, prev_query = adv, prev_adv
+
+                # RECORD DISTANCE BETWEEN QUERIES
+                l2_dist = np.linalg.norm(current_query - prev_query)
+                query_distances.append(l2_dist)
+
                 break
             elif current_lr >= args.min_lr*2:
                 current_lr = current_lr / 2
