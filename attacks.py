@@ -73,14 +73,15 @@ def main(args, gpus):
     k = args.top_k
     goal_epsilon = epsilon
     adv_thresh = args.adv_thresh
+    target_i = -1
     if k > 0:
         if target_class == -1:
             raise ValueError("Partial-information attack is a targeted attack.")
         # adv = image_of_class(target_class, IMAGENET_PATH)
         mask = (y_test == target_class).flatten()
         x_test_target_class = x_test[mask]
-        i = np.random.randint(0, x_test_target_class.shape[0])
-        adv = x_test_target_class[i, None][0]
+        target_i = np.random.randint(0, x_test_target_class.shape[0])
+        adv = x_test_target_class[target_i, None][0]
         adv = adv.astype(np.float32) / 255.0
         epsilon = args.starting_eps
         delta_epsilon = args.starting_delta_eps
@@ -308,7 +309,7 @@ def main(args, gpus):
 
     import datetime 
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
-    np.savez("query_distances_i%d_o%d_t%d_iters%d_%s" % (img_index, orig_class, target_class, max_iters, timestamp), dists=query_distances)
+    np.savez("query_distances_i%d_%d_o%d_t%d_iters%d_%s" % (img_index, target_i, orig_class, target_class, max_iters, timestamp), dists=query_distances)
 
 if __name__ == '__main__':
     main()
