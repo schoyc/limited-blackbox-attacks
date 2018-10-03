@@ -81,6 +81,7 @@ def main(args, gpus):
         x_test_target_class = x_test[mask]
         i = np.random.randint(0, x_test_target_class.shape[0])
         adv = x_test_target_class[i, None][0]
+        adv = adv.astype(np.float32) / 255.0
         epsilon = args.starting_eps
         delta_epsilon = args.starting_delta_eps
     else:
