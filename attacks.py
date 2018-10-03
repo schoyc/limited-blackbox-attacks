@@ -55,6 +55,7 @@ def main(args, gpus):
     else:
         target_class = args.target_class
 
+    original_i = img_index
 
     batch_size = args.batch_size
     out_dir = args.out_dir
@@ -309,7 +310,7 @@ def main(args, gpus):
 
     import datetime 
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
-    np.savez("query_distances_i%d_%d_o%d_t%d_iters%d_%s" % (img_index, target_i, orig_class, target_class, max_iters, timestamp), dists=query_distances)
+    np.savez("query_distances_i%d_%d_o%d_t%d_iters_%d_%d_%s" % (original_i, target_i, orig_class, target_class, img_index, max_iters, timestamp), dists=query_distances)
 
 if __name__ == '__main__':
     main()
