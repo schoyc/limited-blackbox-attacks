@@ -258,15 +258,15 @@ def main(args, gpus):
                 if prop_de > 0:
                     delta_epsilon = max(prop_de, 0.1)
                     last_ls = []
+
+                # RECORD DISTANCE BETWEEN QUERIES
+                l2_dist = np.linalg.norm(adv - proposed_adv)
+                query_distances.append(l2_dist)
+                print("[log] distance from prev. query: %d" % l2_dist)
+
                 prev_adv = adv
                 adv = proposed_adv
                 epsilon = max(epsilon - prop_de/args.conservative, goal_epsilon)
-
-                current_query, prev_query = adv, prev_adv
-
-                # RECORD DISTANCE BETWEEN QUERIES
-                l2_dist = np.linalg.norm(current_query - prev_query)
-                query_distances.append(l2_dist)
 
                 break
             elif current_lr >= args.min_lr*2:
@@ -280,6 +280,8 @@ def main(args, gpus):
                     prop_de = 0
                 current_lr = max_lr
                 print("[log] backtracking eps to %3f" % (epsilon-prop_de,))
+
+        current_query, prev_query = adv, prev_adv
 
         # BOOK-KEEPING STUFF
         num_queries += args.samples_per_draw
