@@ -101,10 +101,11 @@ def main():
         set_param(args, args.exp_param, val)
         num_iters = []
         results = []
+        infos = []
         for i in range(args.num_exp_per_param):
             if i % s == 0:
                 print("[log] Experiment %d/%d" % (i, args.num_exp_per_param))
-            success, retval = attacks.main(args, gpus)
+            success, retval, info = attacks.main(args, gpus)
 
             result = retval
             if success:
@@ -114,12 +115,13 @@ def main():
                 result = min(retval, 0)
 
             results.append(result)
+            infos.append(info)
 
 
         c = Counter(results)
         num_iters = np.array(num_iters)
         print(str(val), "\t", str(np.mean(num_iters)), json.dumps(c))
-        all_results[val] = (results, num_iters)
+        all_results[val] = (results, num_iters, infos)
 
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
     np.savez_compressed("./experiment_results/%s_%s" % (args.exp_param, timestamp), results=all_results, params=np.array(args.exp_param_range))

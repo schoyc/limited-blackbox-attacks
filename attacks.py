@@ -29,6 +29,9 @@ from tools.logging_utils import *
 from tools.tf_sample_cifar10 import model
 from tensorflow.keras.datasets import cifar10
 
+import datetime
+timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
+
 IMAGENET_PATH=""
 NUM_LABELS=10
 SIZE = 32
@@ -59,7 +62,8 @@ def main(args, gpus):
     original_i = img_index
 
     batch_size = args.batch_size
-    out_dir = args.out_dir
+    out_dir = os.path.join([args.out_dir, timestamp])
+    os.makedirs(out_dir, exist_ok=True)
     epsilon = args.epsilon
     lower = np.clip(initial_img - args.epsilon, 0., 1.)
     upper = np.clip(initial_img + args.epsilon, 0., 1.)
@@ -226,6 +230,7 @@ def main(args, gpus):
 
     # MAIN LOOP
     cur_query_adv, prev_query_adv = adv, prev_adv
+    success, retval, info = False, max_iters, (timestamp, original_i, target_i, orig_class, target_class)
     for img_index in range(max_iters):
         start = time.time()
         if args.visualize:
@@ -299,7 +304,7 @@ def main(args, gpus):
                 if prop_de == 0:
                     # raise ValueError("Did not converge.")
                     print("[error] Did not converge!")
-                    return False, -1
+                    return False, -1, info
                 if prop_de < 2e-3:
                     prop_de = 0
                 current_lr = max_lr
@@ -312,7 +317,8 @@ def main(args, gpus):
         log_text = 'Step %05d: loss %.4f lr %.2E eps %.3f (time %.4f)' % (img_index, l, \
                         current_lr, epsilon, time.time() - start)
         log_file.write(log_text + '\n')
-        print(log_text)
+        if img_index % 50 == 0:
+            print(log_text)
 
         if img_index % log_iters == 0:
             lvq, lvs, lrvq, lrvs = sess.run([loss_vs_queries, loss_vs_steps,
