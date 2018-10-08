@@ -59,7 +59,7 @@ def main():
     # Experiment arguments
     parser.add_argument('--exp-param-range', type=float, nargs='+', help='Different values to experiment params with', required=True)
     parser.add_argument('--exp-param', type=str, help='Param to experiment with', required=True)
-    parser.add_argment('--num-exp-per-param', type=int, default=100)
+    parser.add_argument('--num-exp-per-param', type=int, default=100)
     args = parser.parse_args()
 
     # Data checks
@@ -94,7 +94,9 @@ def main():
     print(args_text)
 
     all_results = {}
+    print("Experiment with param:", str(args.exp_param))
     for val in args.exp_param_range:
+        print("[experiment] %s=%f" % (args.exp_param, val))
         set_param(args, args.exp_param, val)
         num_iters = []
         results = []
