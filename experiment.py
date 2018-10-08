@@ -95,12 +95,15 @@ def main():
 
     all_results = {}
     print("Experiment with param:", str(args.exp_param))
+    s = args.num_exp_per_param // 10
     for val in args.exp_param_range:
         print("[experiment] %s=%f" % (args.exp_param, val))
         set_param(args, args.exp_param, val)
         num_iters = []
         results = []
-        for _ in range(args.num_exp_per_param):
+        for i in range(args.num_exp_per_param):
+            if i % s == 0:
+                print("[log] Experiment %d/%d" % (i, args.num_exp_per_param))
             success, retval = attacks.main(args, gpus)
 
             result = retval

@@ -46,6 +46,7 @@ def main(args, gpus):
         x, y = x_test[img_index, None][0], y_test[img_index][0]
         orig_class = y
         initial_img = x
+        initial_img = initial_img.astype(np.float32) / 255.0
         print('LOG: Chose test image (%d) of class (%d)' % (img_index, orig_class))
 
     # PARAMETER SETUP
@@ -109,7 +110,7 @@ def main(args, gpus):
     def query_dist(cur_query, prev_query):
         # RECORD DISTANCE BETWEEN QUERIES
         l2_dist = np.linalg.norm(cur_query - prev_query)
-        print("[log] distance from prev. query: %d" % l2_dist)
+        # print("[log] distance from prev. query: %d" % l2_dist)
         return l2_dist
 
 
