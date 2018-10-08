@@ -62,7 +62,7 @@ def main(args, gpus):
     original_i = img_index
 
     batch_size = args.batch_size
-    out_dir = os.path.join(args.out_dir, timestamp)
+    out_dir = os.path.join(args.out_dir, timestamp, '')
     os.makedirs(out_dir, exist_ok=True)
     epsilon = args.epsilon
     lower = np.clip(initial_img - args.epsilon, 0., 1.)
