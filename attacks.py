@@ -97,6 +97,8 @@ def main(args, gpus):
     label_only = args.label_only
     zero_iters = args.zero_iters
 
+    print("[info] original_i=%d, target_i=%d" % (original_i, target_i))
+
     # TARGET CLASS SELECTION
     if target_class < 0:
         one_hot_vec = one_hot(orig_class, NUM_LABELS)
@@ -239,7 +241,9 @@ def main(args, gpus):
         # Record query distance
         prev_query_adv = cur_query_adv
         cur_query_adv = adv
-        adversarial_query_dists.append(query_dist(cur_query_adv, prev_query_adv))
+        d = query_dist(cur_query_adv, prev_query_adv)
+        adversarial_query_dists.append(d)
+        print("[info] query dist:", d)
 
         # CHECK IF WE SHOULD STOP
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
