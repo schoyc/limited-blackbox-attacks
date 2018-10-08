@@ -95,7 +95,7 @@ def main():
 
     all_results = {}
     print("Experiment with param:", str(args.exp_param))
-    s = args.num_exp_per_param // 10
+    s = args.num_exp_per_param // 10 if args.num_exp_per_param > 10 else 2
     for val in args.exp_param_range:
         print("[experiment] %s=%f" % (args.exp_param, val))
         set_param(args, args.exp_param, val)
