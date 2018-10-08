@@ -308,7 +308,8 @@ def main(args, gpus):
                 if prop_de < 2e-3:
                     prop_de = 0
                 current_lr = max_lr
-                print("[log] backtracking eps to %3f" % (epsilon-prop_de,))
+                if img_index % 50 == 0:
+                    print("[log] backtracking eps to %3f" % (epsilon-prop_de,))
 
         current_query, prev_query = adv, prev_adv
 
