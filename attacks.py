@@ -101,6 +101,18 @@ def main(args, gpus):
                        repeats=batch_per_gpu, axis=0)
     is_targeted = 1 if target_class >= 0 else -1
 
+    # QUERY DISTANCE RECORDING
+    adversarial_query_dists = []
+    conf_est_query_dists = []
+    grad_est_query_dists = []
+
+    def query_dist(cur_query, prev_query):
+        # RECORD DISTANCE BETWEEN QUERIES
+        l2_dist = np.linalg.norm(cur_query - prev_query)
+        print("[log] distance from prev. query: %d" % l2_dist)
+        return l2_dist
+
+
     x = tf.placeholder(tf.float32, initial_img.shape)
     eval_logits, eval_preds = model(sess, tf.expand_dims(x, 0))
     eval_percent_adv = tf.equal(eval_preds[0], tf.constant(target_class, tf.int64))
@@ -160,6 +172,7 @@ def main(args, gpus):
             noise_pos = tf.random_normal((batch_per_gpu//2,) + initial_img.shape)
             noise = tf.concat([noise_pos, -noise_pos], axis=0)
             eval_points = x + args.sigma * noise
+            print("Eval points shape:", eval_points.shape)
             losses, noise = loss_fn(eval_points, noise)
         losses_tiled = tf.tile(tf.reshape(losses, (-1, 1, 1, 1)), (1,) + initial_img.shape)
         grad_estimates.append(tf.reduce_mean(losses_tiled * noise, axis=0)/args.sigma)
@@ -211,15 +224,22 @@ def main(args, gpus):
     current_query, prev_query = adv, prev_adv
 
     # MAIN LOOP
+    cur_query_adv, prev_query_adv = adv, prev_adv
     for img_index in range(max_iters):
         start = time.time()
         if args.visualize:
             render_frame(sess, adv, img_index, render_logits, render_feed, out_dir)
 
+        # Record query distance
+        prev_query_adv = cur_query_adv
+        cur_query_adv = adv
+        adversarial_query_dists.append(query_dist(cur_query_adv, prev_query_adv))
+
         # CHECK IF WE SHOULD STOP
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
         if padv == 1 and epsilon <= goal_epsilon:
             print('[log] early stopping at iteration %d' % img_index)
+            success, retval = True, img_index
             break
 
         prev_g = g
@@ -254,15 +274,16 @@ def main(args, gpus):
             proposed_adv = adv - is_targeted * current_lr * np.sign(g)
             proposed_adv = np.clip(proposed_adv, lower, upper)
             num_queries += 1
+
+            # Record query distance
+            prev_query_adv = cur_query_adv
+            cur_query_adv = proposed_adv
+            adversarial_query_dists.append(query_dist(cur_query_adv, prev_query_adv))
+
             if robust_in_top_k(target_class, proposed_adv, k):
                 if prop_de > 0:
                     delta_epsilon = max(prop_de, 0.1)
                     last_ls = []
-
-                # RECORD DISTANCE BETWEEN QUERIES
-                l2_dist = np.linalg.norm(adv - proposed_adv)
-                query_distances.append(l2_dist)
-                print("[log] distance from prev. query: %d" % l2_dist)
 
                 prev_adv = adv
                 adv = proposed_adv
@@ -275,7 +296,9 @@ def main(args, gpus):
             else:
                 prop_de = prop_de / 2
                 if prop_de == 0:
-                    raise ValueError("Did not converge.")
+                    # raise ValueError("Did not converge.")
+                    print("[error] Did not converge!")
+                    return False, -1
                 if prop_de < 2e-3:
                     prop_de = 0
                 current_lr = max_lr
@@ -305,14 +328,16 @@ def main(args, gpus):
             np.save(os.path.join(out_dir, '%s.npy' % (img_index+1)), adv)
             scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (img_index+1)), adv)
 
-    print("Average query distance:", np.mean(query_distances))
+    # print("Average query distance:", np.mean(query_distances))
     
     log_output(sess, eval_logits, eval_preds, x, adv, initial_img, \
             target_class, out_dir, orig_class, num_queries)
 
-    import datetime 
-    timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
-    np.savez("query_distances_i%d_%d_o%d_t%d_iters_%d_%d_%s" % (original_i, target_i, orig_class, target_class, img_index, max_iters, timestamp), dists=query_distances)
+    # import datetime
+    # timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
+    # np.savez("query_distances_i%d_%d_o%d_t%d_iters_%d_%d_%s" % (original_i, target_i, orig_class, target_class, img_index, max_iters, timestamp), dists=query_distances)
+
+    return success, retval
 
 if __name__ == '__main__':
     main()
