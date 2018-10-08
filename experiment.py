@@ -85,8 +85,8 @@ def main():
         ))
 
     # CLEAR THE PATH
-    if os.path.exists(args.out_dir):
-        shutil.rmtree(args.out_dir)
+    # if os.path.exists(args.out_dir):
+    #     shutil.rmtree(args.out_dir)
     os.makedirs(args.out_dir)
 
     # PRINT PARAMS
