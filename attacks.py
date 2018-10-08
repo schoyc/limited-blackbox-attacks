@@ -233,6 +233,7 @@ def main(args, gpus):
     # MAIN LOOP
     cur_query_adv, prev_query_adv = adv, prev_adv
     success, retval, info = False, max_iters, (timestamp, original_i, target_i, orig_class, target_class)
+    advs = []
     for img_index in range(max_iters):
         start = time.time()
         if args.visualize:
@@ -339,6 +340,11 @@ def main(args, gpus):
         if (img_index+1) % args.save_iters == 0 and args.save_iters > 0:
             np.save(os.path.join(out_dir, '%s.npy' % (img_index+1)), adv)
             scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (img_index+1)), adv)
+
+        if img_index < 100:
+            advs.append(adv)
+
+    np.savez_compressed(os.path.join(out_dir, "trajectory_%d_to_%d.npz" % (original_i, target_i)), np.array(advs))
 
     # print("Average query distance:", np.mean(query_distances))
     
