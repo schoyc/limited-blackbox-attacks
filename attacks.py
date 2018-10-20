@@ -327,7 +327,7 @@ def main(args, gpus):
         log_text = 'Step %05d: loss %.4f lr %.2E eps %.3f (time %.4f)' % (img_index, l, \
                         current_lr, epsilon, time.time() - start)
         log_file.write(log_text + '\n')
-        if img_index % (zero_iters // 10) == 0:
+        if img_index % (max_iters // 10) == 0:
             print(log_text)
 
         if img_index % log_iters == 0:
