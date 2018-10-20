@@ -28,6 +28,7 @@ def main():
     parser.add_argument('--learning-rate', type=float, default=LEARNING_RATE)
     parser.add_argument('--img-path', type=str)
     parser.add_argument('--img-index', type=int)
+    parser.add_argument('--target-img-index', type=int)
     parser.add_argument('--out-dir', type=str, required=True,
                         help='dir to save to if not gridding; otherwise parent \
                         dir of grid directories')
