@@ -39,7 +39,9 @@ SIZE = 32
 def main(args, gpus):
     # INITIAL IMAGE AND CLASS SELECTION
     (_, _), (x_test, y_test) = cifar10.load_data()
-    img_index = np.random.randint(0, x_test.shape[0])
+
+    specified_imgs = args.img_index is not None and args.target_img_index is not None
+    img_index = np.random.randint(0, x_test.shape[0]) if specified_imgs else args.img_index
 
     if args.img_path:
         initial_img = np.asarray(Image.open(args.img_path).resize((SIZE, SIZE)))
@@ -50,12 +52,12 @@ def main(args, gpus):
         orig_class = y
         initial_img = x
         initial_img = initial_img.astype(np.float32) / 255.0
-        print('LOG: Chose test image (%d) of class (%d)' % (img_index, orig_class))
+        print('[info] chose test image (%d) of class (%d)' % (img_index, orig_class))
 
     # PARAMETER SETUP
-    if args.target_class is None:
+    if args.target_class is None and not specified_imgs:
         target_class = pseudorandom_target(img_index, NUM_LABELS, orig_class)
-        print('chose pseudorandom target class: %d' % target_class)
+        print('[info] chose pseudorandom target class: %d' % target_class)
     else:
         target_class = args.target_class
 
@@ -84,9 +86,10 @@ def main(args, gpus):
         if target_class == -1:
             raise ValueError("Partial-information attack is a targeted attack.")
         # adv = image_of_class(target_class, IMAGENET_PATH)
+
         mask = (y_test == target_class).flatten()
         x_test_target_class = x_test[mask]
-        target_i = np.random.randint(0, x_test_target_class.shape[0])
+        target_i = np.random.randint(0, x_test_target_class.shape[0]) if not specified_imgs else args.target_img_index
         adv = x_test_target_class[target_i, None][0]
         adv = adv.astype(np.float32) / 255.0
         epsilon = args.starting_eps
@@ -175,11 +178,11 @@ def main(args, gpus):
                 (partial_info_loss if k < NUM_LABELS else standard_loss)
     for img_index, device in enumerate(gpus):
         with tf.device(device):
-            print('loading on gpu %d of %d' % (img_index+1, len(gpus)))
+            # print('loading on gpu %d of %d' % (img_index+1, len(gpus)))
             noise_pos = tf.random_normal((batch_per_gpu//2,) + initial_img.shape)
             noise = tf.concat([noise_pos, -noise_pos], axis=0)
             eval_points = x + args.sigma * noise
-            print("Eval points shape:", eval_points.shape)
+            # print("Eval points shape:", eval_points.shape)
             losses, noise = loss_fn(eval_points, noise)
         losses_tiled = tf.tile(tf.reshape(losses, (-1, 1, 1, 1)), (1,) + initial_img.shape)
         grad_estimates.append(tf.reduce_mean(losses_tiled * noise, axis=0)/args.sigma)
@@ -234,6 +237,7 @@ def main(args, gpus):
     cur_query_adv, prev_query_adv = adv, prev_adv
     success, retval, info = False, max_iters, (timestamp, original_i, target_i, orig_class, target_class)
     advs = []
+    entire_start = time.time()
     for img_index in range(max_iters):
         start = time.time()
         if args.visualize:
@@ -244,7 +248,7 @@ def main(args, gpus):
         cur_query_adv = adv
         d = query_dist(cur_query_adv, prev_query_adv)
         adversarial_query_dists.append(d)
-        print("[info] query dist:", d)
+        # print("[info] query dist:", d)
 
         # CHECK IF WE SHOULD STOP
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
