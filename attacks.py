@@ -269,7 +269,7 @@ def main(args, gpus):
         if last_ls[-1] > last_ls[0] \
            and len(last_ls) == args.plateau_length:
             if max_lr > args.min_lr:
-                print("[log] Annealing max_lr")
+                # print("[log] Annealing max_lr")
                 max_lr = max(max_lr / args.plateau_drop, args.min_lr)
             last_ls = []
 
@@ -317,8 +317,8 @@ def main(args, gpus):
                 if prop_de < 2e-3:
                     prop_de = 0
                 current_lr = max_lr
-                if img_index % 50 == 0:
-                    print("[log] backtracking eps to %3f" % (epsilon-prop_de,))
+                # if img_index % 50 == 0:
+                #     print("[log] backtracking eps to %3f" % (epsilon-prop_de,))
 
         current_query, prev_query = adv, prev_adv
 
@@ -327,7 +327,7 @@ def main(args, gpus):
         log_text = 'Step %05d: loss %.4f lr %.2E eps %.3f (time %.4f)' % (img_index, l, \
                         current_lr, epsilon, time.time() - start)
         log_file.write(log_text + '\n')
-        if img_index % 50 == 0:
+        if img_index % (zero_iters // 10) == 0:
             print(log_text)
 
         if img_index % log_iters == 0:
@@ -345,10 +345,10 @@ def main(args, gpus):
             np.save(os.path.join(out_dir, '%s.npy' % (img_index+1)), adv)
             scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (img_index+1)), adv)
 
-        if img_index < 100:
-            advs.append(adv)
-
-    np.savez_compressed(os.path.join(out_dir, "trajectory_%d_to_%d.npz" % (original_i, target_i)), np.array(advs))
+    #     if img_index < 100:
+    #         advs.append(adv)
+    #
+    # np.savez_compressed(os.path.join(out_dir, "trajectory_%d_to_%d.npz" % (original_i, target_i)), np.array(advs))
 
     # print("Average query distance:", np.mean(query_distances))
     
