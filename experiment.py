@@ -114,7 +114,7 @@ def main():
             else:
                 result = min(retval, 0)
 
-            print("[run] Experiment %d/%d: result %d" % (i, args.num_exp_per_param))
+            print("[run] Experiment %d/%d: result %d" % (i, args.num_exp_per_param, result))
 
             results.append(result)
             infos.append(info)
