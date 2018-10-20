@@ -118,7 +118,7 @@ def main():
             results.append(result)
             infos.append(info)
 
-          if i % s == 0:
+            if i % s == 0:
               c = Counter(results)
               num_iters = np.array(num_iters)
               print(str(val), "\t", str(np.mean(num_iters)), json.dumps(c))
