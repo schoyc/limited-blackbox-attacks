@@ -121,13 +121,13 @@ def main():
 
             if i % s == 0:
               c = Counter(results)
-              num_iters = np.array(num_iters)
-              print(str(val), "\t", str(np.mean(num_iters)), json.dumps(c))
+              # num_iters = np.array(num_iters)
+              print(str(val), "\t", str(np.mean(np.array(num_iters))), json.dumps(c))
 
 
         c = Counter(results)
-
-        print(str(val), "\t", str(np.mean(np.array(num_iters))), json.dumps(c))
+        num_iters = np.array(num_iters)
+        print(str(val), "\t", str(np.mean(num_iters)), json.dumps(c))
         all_results[val] = (results, num_iters, infos)
 
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
