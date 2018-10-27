@@ -140,7 +140,7 @@ def set_param(args, param, val):
     elif param == 'sigma':
         args.sigma = val
     elif param == 'zero-iters':
-        args.zero_iters = val
+        args.zero_iters = int(val)
     else:
         raise ValueError("Unrecognized param!")
 
