@@ -139,6 +139,8 @@ def set_param(args, param, val):
         args.label_only_sigma = val
     elif param == 'sigma':
         args.sigma = val
+    elif param == 'zero-iters':
+        args.zero_iters = val
     else:
         raise ValueError("Unrecognized param!")
 

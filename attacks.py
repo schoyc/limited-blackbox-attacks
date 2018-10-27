@@ -235,7 +235,7 @@ def main(args, gpus):
 
     # MAIN LOOP
     cur_query_adv, prev_query_adv = adv, prev_adv
-    success, retval, info = False, max_iters, (timestamp, original_i, target_i, orig_class, target_class)
+    success, retval, info = False, args.max_queries, (timestamp, original_i, target_i, orig_class, target_class)
     advs = []
     entire_start = time.time()
     for img_index in range(max_iters):
@@ -323,7 +323,7 @@ def main(args, gpus):
         current_query, prev_query = adv, prev_adv
 
         # BOOK-KEEPING STUFF
-        num_queries += args.samples_per_draw
+        num_queries += args.samples_per_draw + (args.zero_iters if label_only else 0)
         log_text = 'Step %05d: loss %.4f lr %.2E eps %.3f (time %.4f)' % (img_index, l, \
                         current_lr, epsilon, time.time() - start)
         log_file.write(log_text + '\n')
@@ -345,6 +345,7 @@ def main(args, gpus):
             np.save(os.path.join(out_dir, '%s.npy' % (img_index+1)), adv)
             scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (img_index+1)), adv)
 
+    print("[error] hit max iterations")
     #     if img_index < 100:
     #         advs.append(adv)
     #
