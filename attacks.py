@@ -253,8 +253,8 @@ def main(args, gpus):
         # CHECK IF WE SHOULD STOP
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
         if padv == 1 and epsilon <= goal_epsilon:
-            print('[log] early stopping at iteration %d' % img_index)
-            success, retval = True, img_index
+            print('[log] early stopping at iteration %d, num queries %d' % (img_index, num_queries))
+            success, retval = True, num_queries
             break
 
         prev_g = g
