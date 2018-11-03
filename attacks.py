@@ -151,6 +151,7 @@ def main(args, gpus):
         noised_eval_im = tiled_points + \
                 tf.random_uniform(tf.shape(tiled_points), minval=-1, \
                 maxval=1)*args.label_only_sigma
+
         logits, preds = model(sess, tf.reshape(noised_eval_im, (-1,) + initial_img.shape))
         vals, inds = tf.nn.top_k(logits, k=k)
         real_inds = tf.reshape(inds, (zero_iters, batch_per_gpu, -1))
@@ -158,6 +159,11 @@ def main(args, gpus):
         tiled_rank_range = tf.tile(tf.reshape(rank_range, (1, 1, k)), [zero_iters, batch_per_gpu, 1])
         batches_in = tf.where(tf.equal(real_inds, target_class), 
                 tiled_rank_range, tf.zeros(tf.shape(tiled_rank_range)))
+
+        print("[debug]", "lo_tiled", tiled_points.shape, "lo_logits",
+              logits.shape, "inds", inds.shape, "real_inds", real_inds.shape,
+              "rank_range", rank_range.shape, "tiled_rank_range", tiled_rank_range.shape,
+              "batches_in", batches_in.shape)
         return 1 - tf.reduce_mean(batches_in, [0, 2]), noise
 
     def partial_info_loss(eval_points, noise):
@@ -187,6 +193,7 @@ def main(args, gpus):
         losses_tiled = tf.tile(tf.reshape(losses, (-1, 1, 1, 1)), (1,) + initial_img.shape)
         grad_estimates.append(tf.reduce_mean(losses_tiled * noise, axis=0)/args.sigma)
         final_losses.append(losses)
+        print("[debug]", "eval_points", eval_points.shape, "losses", losses.shape, "losses_tiled", losses_tiled.shape)
     grad_estimate = tf.reduce_mean(grad_estimates, axis=0)
     final_losses = tf.concat(final_losses, axis=0)
 
