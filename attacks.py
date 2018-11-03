@@ -18,6 +18,7 @@ import sys
 import time
 import scipy.misc
 import PIL
+import tools.estimation_strats as est_strats
 
 import matplotlib
 matplotlib.use('Agg')
@@ -65,6 +66,7 @@ def main(args, gpus):
 
     batch_size = args.batch_size
     out_dir = os.path.join(args.out_dir, timestamp, '')
+    print(out_dir)
     os.makedirs(out_dir, exist_ok=True)
     epsilon = args.epsilon
     lower = np.clip(initial_img - args.epsilon, 0., 1.)
@@ -145,12 +147,14 @@ def main(args, gpus):
         losses = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)
         return losses, noise
 
+    conf_est_strat = est_strats.ImageTranslation(args.strat_param, noise=args.label_only_sigma)
     def label_only_loss(eval_points, noise):
         noised_eval_points = tf.zeros((batch_per_gpu,))
-        tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [zero_iters,1,1,1,1])
-        noised_eval_im = tiled_points + \
-                tf.random_uniform(tf.shape(tiled_points), minval=-1, \
-                maxval=1)*args.label_only_sigma
+        # tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [zero_iters,1,1,1,1])
+        # noised_eval_im = tiled_points + \
+        #         tf.random_uniform(tf.shape(tiled_points), minval=-1, \
+        #         maxval=1)*args.label_only_sigma
+        noised_eval_im = conf_est_strat.generate_samples(eval_points, zero_iters, initial_img.shape)
 
         logits, preds = model(sess, tf.reshape(noised_eval_im, (-1,) + initial_img.shape))
         vals, inds = tf.nn.top_k(logits, k=k)

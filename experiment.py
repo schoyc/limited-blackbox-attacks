@@ -60,7 +60,11 @@ def main():
     # Experiment arguments
     parser.add_argument('--exp-param-range', type=float, nargs='+', help='Different values to experiment params with', required=True)
     parser.add_argument('--exp-param', type=str, help='Param to experiment with', required=True)
+    parser.add_argument('--exp-param-range-2', type=float, nargs='+', help='Different values to experiment params with',
+                        required=False)
+    parser.add_argument('--exp-param-2', type=str, help='Param to experiment with', required=False)
     parser.add_argument('--num-exp-per-param', type=int, default=100)
+    parser.add_argument('--strat-param', type=int, default=1)
     args = parser.parse_args()
 
     # Data checks
@@ -97,38 +101,41 @@ def main():
     all_results = {}
     print("Experiment with param:", str(args.exp_param))
     s = args.num_exp_per_param // 20 if args.num_exp_per_param > 10 else 2
+
     for val in args.exp_param_range:
         print("[experiment] %s=%f" % (args.exp_param, val))
         set_param(args, args.exp_param, val)
-        num_iters = []
-        results = []
-        infos = []
-        for i in range(args.num_exp_per_param):
-            # if i % s == 0:
-            success, retval, info = attacks.main(args, gpus)
+        for val_2 in args.exp_param_range_2:
+            set_param(args, args.exp_param_2, val_2)
+            num_iters = []
+            results = []
+            infos = []
+            for i in range(args.num_exp_per_param):
+                # if i % s == 0:
+                success, retval, info = attacks.main(args, gpus)
 
-            result = retval
-            if success:
-                result = 1
-                num_iters.append(retval)
-            else:
-                result = min(retval, 0)
+                result = retval
+                if success:
+                    result = 1
+                    num_iters.append(retval)
+                else:
+                    result = min(retval, 0)
 
-            print("[run] Experiment %d/%d: result %d" % (i, args.num_exp_per_param, result))
+                print("[run] Experiment %d/%d: result %d" % (i, args.num_exp_per_param, result))
 
-            results.append(result)
-            infos.append(info)
+                results.append(result)
+                infos.append(info)
 
-            if i % s == 0:
-              c = Counter(results)
-              # num_iters = np.array(num_iters)
-              print(str(val), "\t", str(np.mean(np.array(num_iters))), json.dumps(c))
+                if i % s == 0:
+                  c = Counter(results)
+                  # num_iters = np.array(num_iters)
+                  print(str(val), "\t", str(np.mean(np.array(num_iters))), json.dumps(c))
 
 
-        c = Counter(results)
-        num_iters = np.array(num_iters)
-        print(str(val), "\t", str(np.mean(num_iters)), json.dumps(c))
-        all_results[val] = (results, num_iters, infos)
+            c = Counter(results)
+            num_iters = np.array(num_iters)
+            print(str(val), "\t", str(np.mean(num_iters)), json.dumps(c))
+            all_results[val] = (results, num_iters, infos)
 
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
     np.savez_compressed("./experiment_results/%s_%s" % (args.exp_param, timestamp), results=all_results, params=np.array(args.exp_param_range))
@@ -141,6 +148,8 @@ def set_param(args, param, val):
         args.sigma = val
     elif param == 'zero-iters':
         args.zero_iters = int(val)
+    elif param == 'strat-param':
+        args.strat_param = int(val)
     else:
         raise ValueError("Unrecognized param!")
 
