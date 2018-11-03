@@ -134,8 +134,9 @@ def main():
 
             c = Counter(results)
             num_iters = np.array(num_iters)
-            print(str(val), "\t", str(np.mean(num_iters)), json.dumps(c))
-            all_results[val] = (results, num_iters, infos)
+            key = (val, val2)
+            print(str(key), "\t", str(np.mean(num_iters)), json.dumps(c))
+            all_results[key] = (results, num_iters, infos)
 
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
     np.savez_compressed("./experiment_results/%s_%s" % (args.exp_param, timestamp), results=all_results, params=np.array(args.exp_param_range))
