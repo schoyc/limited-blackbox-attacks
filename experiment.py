@@ -103,13 +103,15 @@ def main():
     s = args.num_exp_per_param // 20 if args.num_exp_per_param > 10 else 2
 
     for val in args.exp_param_range:
-        print("[experiment] %s=%f" % (args.exp_param, val))
         set_param(args, args.exp_param, val)
         for val_2 in args.exp_param_range_2:
             set_param(args, args.exp_param_2, val_2)
             num_iters = []
             results = []
             infos = []
+
+            print("[experiment] %s=%f, %s=%f" % (args.exp_param, val, args.exp_param_2, val_2))
+            key = (val, val_2)
             for i in range(args.num_exp_per_param):
                 # if i % s == 0:
                 success, retval, info = attacks.main(args, gpus)
@@ -129,12 +131,11 @@ def main():
                 if i % s == 0:
                   c = Counter(results)
                   # num_iters = np.array(num_iters)
-                  print(str(val), "\t", str(np.mean(np.array(num_iters))), json.dumps(c))
+                  print(str(key), "\t", str(np.mean(np.array(num_iters))), json.dumps(c))
 
 
             c = Counter(results)
             num_iters = np.array(num_iters)
-            key = (val, val2)
             print(str(key), "\t", str(np.mean(num_iters)), json.dumps(c))
             all_results[key] = (results, num_iters, infos)
 
