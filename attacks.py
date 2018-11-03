@@ -164,10 +164,10 @@ def main(args, gpus):
         batches_in = tf.where(tf.equal(real_inds, target_class), 
                 tiled_rank_range, tf.zeros(tf.shape(tiled_rank_range)))
 
-        print("[debug]", "lo_tiled", tiled_points.shape, "lo_logits",
-              logits.shape, "inds", inds.shape, "real_inds", real_inds.shape,
-              "rank_range", rank_range.shape, "tiled_rank_range", tiled_rank_range.shape,
-              "batches_in", batches_in.shape)
+        # print("[debug]", "lo_tiled", tiled_points.shape, "lo_logits",
+        #       logits.shape, "inds", inds.shape, "real_inds", real_inds.shape,
+        #       "rank_range", rank_range.shape, "tiled_rank_range", tiled_rank_range.shape,
+        #       "batches_in", batches_in.shape)
         return 1 - tf.reduce_mean(batches_in, [0, 2]), noise
 
     def partial_info_loss(eval_points, noise):
