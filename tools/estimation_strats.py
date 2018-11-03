@@ -30,8 +30,8 @@ class ImageTranslation(ConfidenceEstimationStrategy):
 
     def generate_samples(self, eval_points, n, img_shape):
         tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [n, 1, 1, 1, 1])
-
-        images = tf.reshape(tiled_points, (-1) + img_shape)
+    
+        images = tf.reshape(tiled_points, (-1,) + img_shape)
         translations = tf.random_uniform((images.shape[0], 2), -self.translation_limit, self.translation_limit + 1, dtype=tf.int32)
 
         translated_points = tf.contrib.image.translate(images, tf.cast(translations, tf.float32))
