@@ -131,7 +131,8 @@ def main():
                 if i % s == 0:
                   c = Counter(results)
                   # num_iters = np.array(num_iters)
-                  print(str(key), "\t", str(np.mean(np.array(num_iters))), json.dumps(c))
+                  n_i = np.array(num_iters)
+                  print(str(key), "\t", str(np.mean(n_i)), str(np.median(n_i)), str(np.std(n_i)), json.dumps(c))
 
 
             c = Counter(results)
