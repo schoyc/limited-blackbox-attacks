@@ -38,9 +38,9 @@ def _preprocess(image, height, width, scope=None):
     with tf.name_scope(scope, 'eval_image', [image, height, width]):
         if image.dtype != tf.float32:
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-        image = tf.image.resize_bilinear(image, [height, width], align_corners=False)
-        image = tf.subtract(image, 0.5)
-        image = tf.multiply(image, 2.0)
+        # image = tf.image.resize_bilinear(image, [height, width], align_corners=False)
+        # image = tf.subtract(image, 0.5)
+        # image = tf.multiply(image, 2.0)
         return image
 
 # input is [batch, 256, 256, 3], pixels in [0, 1]

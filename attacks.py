@@ -147,7 +147,9 @@ def main(args, gpus):
         losses = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)
         return losses, noise
 
-    conf_est_strat = est_strats.ImageTranslation(args.strat_param, noise=args.label_only_sigma)
+    # conf_est_strat = est_strats.ImageTranslation(args.strat_param, noise=args.label_only_sigma)
+    conf_est_strat = est_strats.ImageAdjustment(est_strats.ImageAdjustment.Adjustment.BRIGTHNESS,
+                                                max_delta=0.09)
     def label_only_loss(eval_points, noise):
         noised_eval_points = tf.zeros((batch_per_gpu,))
         # tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [zero_iters,1,1,1,1])
