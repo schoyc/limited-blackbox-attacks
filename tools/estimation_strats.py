@@ -69,7 +69,7 @@ class ImageAdjustment(ConfidenceEstimationStrategy):
     def generate_samples(self, eval_points, n, img_shape):
         tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [n, 1, 1, 1, 1])
 
-        images = tf.reshape(tiled_points, (-1) + img_shape)
+        images = tf.reshape(tiled_points, (-1, ) + img_shape)
         adjusted_points = self.adjustment(images, **self.kwargs)
 
         points = tf.reshape(adjusted_points, tf.shape(tiled_points))
