@@ -61,6 +61,7 @@ class ImageAdjustment(ConfidenceEstimationStrategy):
 
     def __init__(self, adjustment, noise=None, lower=None, upper=None, max_delta=None):
         self.adjustment = self.adjustment_to_op[adjustment]
+        self.noise = noise
         if adjustment == self.Adjustment.BRIGHTNESS or adjustment == self.Adjustment.HUE:
             self.kwargs = {"max_delta": max_delta}
         elif adjustment == self.Adjustment.CONTRAST or adjustment == self.Adjustment.SATURATION:
