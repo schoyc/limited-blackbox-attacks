@@ -148,7 +148,7 @@ def main(args, gpus):
         return losses, noise
 
     # conf_est_strat = est_strats.ImageTranslation(args.strat_param, noise=args.label_only_sigma)
-    conf_est_strat = est_strats.ImageAdjustment(est_strats.ImageAdjustment.Adjustment.BRIGTHNESS,
+    conf_est_strat = est_strats.ImageAdjustment(est_strats.ImageAdjustment.Adjustment.BRIGHTNESS,
                                                 max_delta=0.09)
     def label_only_loss(eval_points, noise):
         noised_eval_points = tf.zeros((batch_per_gpu,))
