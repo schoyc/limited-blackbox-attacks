@@ -6,6 +6,7 @@ from tensorflow.python.client import device_lib
 from collections import Counter
 import numpy as np
 import datetime
+from collections import OrderedDict
 
 import attacks 
 
@@ -58,13 +59,14 @@ def main():
     parser.add_argument('--conservative', type=int, default=2, help="How conservative we should be in epsilon decay; increase if no convergence")
 
     # Experiment arguments
+    parser.add_argument('--exp-name', type=str)
     parser.add_argument('--exp-param-range', type=float, nargs='+', help='Different values to experiment params with', required=True)
     parser.add_argument('--exp-param', type=str, help='Param to experiment with', required=True)
     parser.add_argument('--exp-param-range-2', type=float, nargs='+', help='Different values to experiment params with',
                         required=False)
     parser.add_argument('--exp-param-2', type=str, help='Param to experiment with', required=False)
     parser.add_argument('--num-exp-per-param', type=int, default=100)
-    parser.add_argument('--strat-param', type=int, default=1)
+    parser.add_argument('--strat-param', type=float, default=1)
     args = parser.parse_args()
 
     # Data checks
@@ -99,6 +101,7 @@ def main():
     print(args_text)
 
     all_results = {}
+    results_s = []
     print("Experiment with param:", str(args.exp_param))
     s = args.num_exp_per_param // 20 if args.num_exp_per_param > 10 else 2
 
@@ -137,11 +140,16 @@ def main():
 
             c = Counter(results)
             num_iters = np.array(num_iters)
-            print(str(key), "\t", str(np.mean(num_iters)), json.dumps(c))
+            result_s = " ".join([str(key), "\t", str(np.mean(num_iters)), json.dumps(c)])
+            results_s.append(result_s)
+            print(result_s)
             all_results[key] = (results, num_iters, infos)
 
+    print("Summary:")
+    for s in results_s:
+        print(s)
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
-    np.savez_compressed("./experiment_results/%s_%s" % (args.exp_param, timestamp), results=all_results, params=np.array(args.exp_param_range))
+    np.savez_compressed("./experiment_results/%s_%s" % (args.exp_name, timestamp), results=all_results, params=np.array(args.exp_param_range))
 
 
 def set_param(args, param, val):
@@ -152,7 +160,7 @@ def set_param(args, param, val):
     elif param == 'zero-iters':
         args.zero_iters = int(val)
     elif param == 'strat-param':
-        args.strat_param = int(val)
+        args.strat_param = val
     else:
         raise ValueError("Unrecognized param!")
 
