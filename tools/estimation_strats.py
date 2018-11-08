@@ -32,9 +32,9 @@ class ImageTranslation(ConfidenceEstimationStrategy):
         tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [n, 1, 1, 1, 1])
 
         images = tf.reshape(tiled_points, (-1,) + img_shape)
-        translations = tf.random_uniform((tf.shape(images)[0], 2), -self.translation_limit, self.translation_limit + 1, dtype=tf.int32)
+        translations = tf.random_uniform((tf.shape(images)[0], 2), -self.translation_limit, self.translation_limit)
 
-        translated_points = tf.contrib.image.translate(images, tf.cast(translations, tf.float32))
+        translated_points = tf.contrib.image.translate(images, translations, interpolation='BILINEAR')
 
         points = tf.reshape(translated_points, tf.shape(tiled_points))
         if self.noise is not None:
