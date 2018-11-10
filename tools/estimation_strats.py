@@ -54,7 +54,7 @@ class ImageRotation(ConfidenceEstimationStrategy):
         tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [n, 1, 1, 1, 1])
 
         images = tf.reshape(tiled_points, (-1,) + img_shape)
-        rotations = tf.random_uniform((tf.shape(images)[0]), -self.rotation_limit, self.rotation_limit)
+        rotations = tf.random_uniform((tf.shape(images)[0], 1), -self.rotation_limit, self.rotation_limit)
 
         rotated_points = tf.contrib.image.rotate(images, rotations, interpolation='BILINEAR')
 
