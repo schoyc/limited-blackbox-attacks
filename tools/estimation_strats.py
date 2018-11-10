@@ -44,6 +44,28 @@ class ImageTranslation(ConfidenceEstimationStrategy):
 
         return points
 
+class ImageRotation(ConfidenceEstimationStrategy):
+
+    def __init__(self, rotation_limit, noise=None):
+        self.rotation_limit = rotation_limit * np.pi
+        self.noise = noise
+
+    def generate_samples(self, eval_points, n, img_shape):
+        tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [n, 1, 1, 1, 1])
+
+        images = tf.reshape(tiled_points, (-1,) + img_shape)
+        rotations = tf.random_uniform((tf.shape(images)[0]), -self.rotation_limit, self.rotation_limit)
+
+        rotated_points = tf.contrib.image.rotate(images, rotations, interpolation='BILINEAR')
+
+        points = tf.reshape(rotated_points, tf.shape(tiled_points))
+        if self.noise is not None:
+            points = points + \
+                    tf.random_uniform(tf.shape(tiled_points), minval=-1, \
+                                         maxval=1) * self.noise
+
+        return points
+
 class ImageAdjustment(ConfidenceEstimationStrategy):
 
     class Adjustment(Enum):
