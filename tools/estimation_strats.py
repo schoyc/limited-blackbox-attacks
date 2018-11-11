@@ -69,7 +69,7 @@ class ImagePixelScale(ImageTransformation):
 class ImageCropAndResize(ImageTransformation):
     def transform_points(self, images, n):
         k = tf.shape(images)[0]
-        bounds = tf.random_uniform((k, 1), -self.limit, self.limit)
+        bounds = tf.random_uniform((k, 1), 0, self.limit)
         boxes = tf.concat([bounds, bounds, 1 - bounds, 1 - bounds], axis=1)
         cropped_images = tf.image.crop_and_resize(images, boxes, tf.range(k), [32, 32])
         return cropped_images
