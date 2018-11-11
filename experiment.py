@@ -67,6 +67,7 @@ def main():
     parser.add_argument('--exp-param-2', type=str, help='Param to experiment with', required=False)
     parser.add_argument('--num-exp-per-param', type=int, default=100)
     parser.add_argument('--strat-param', type=float, default=1)
+    parser.add_argument('--est-strat', type=str, default="uniform")
     args = parser.parse_args()
 
     # Data checks

@@ -21,50 +21,59 @@ class UniformSampling(ConfidenceEstimationStrategy):
 
         return noised_eval_im
 
-
-class ImageTranslation(ConfidenceEstimationStrategy):
-
-    def __init__(self, translation_limit, noise=None):
-        self.translation_limit = translation_limit
+class ImageTransformation(ConfidenceEstimationStrategy):
+    def __init__(self, limit, noise=None):
+        self.limit = limit
         self.noise = noise
 
     def generate_samples(self, eval_points, n, img_shape):
         tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [n, 1, 1, 1, 1])
 
         images = tf.reshape(tiled_points, (-1,) + img_shape)
-        translations = tf.random_uniform((tf.shape(images)[0], 2), -self.translation_limit, self.translation_limit)
+        transformed_points = self.transform_points(images, n)
+        points = tf.reshape(transformed_points, tf.shape(tiled_points))
+        if self.noise is not None:
+            points = points + \
+                    tf.random_uniform(tf.shape(tiled_points), minval=-1, \
+                                         maxval=1) * self.noise
+
+        return points
+
+    def transform_points(self, images, n):
+        return images
+
+
+
+class ImageTranslation(ImageTransformation):
+    def transform_points(self, images, n):
+        translations = tf.random_uniform((tf.shape(images)[0], 2), -self.limit, self.limit)
 
         translated_points = tf.contrib.image.translate(images, translations, interpolation='BILINEAR')
+        return translated_points
 
-        points = tf.reshape(translated_points, tf.shape(tiled_points))
-        if self.noise is not None:
-            points = points + \
-                    tf.random_uniform(tf.shape(tiled_points), minval=-1, \
-                                         maxval=1) * self.noise
-
-        return points
-
-class ImageRotation(ConfidenceEstimationStrategy):
-
-    def __init__(self, rotation_limit, noise=None):
-        self.rotation_limit = rotation_limit * np.pi
-        self.noise = noise
-
-    def generate_samples(self, eval_points, n, img_shape):
-        tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [n, 1, 1, 1, 1])
-
-        images = tf.reshape(tiled_points, (-1,) + img_shape)
-        rotations = tf.random_uniform((tf.shape(images)[0],), -self.rotation_limit, self.rotation_limit)
+class ImageRotation(ImageTransformation):
+    def transform_points(self, images, n):
+        rotations = tf.random_uniform((tf.shape(images)[0],), -self.limit, self.limit)
 
         rotated_points = tf.contrib.image.rotate(images, rotations, interpolation='BILINEAR')
+        return rotated_points
 
-        points = tf.reshape(rotated_points, tf.shape(tiled_points))
-        if self.noise is not None:
-            points = points + \
-                    tf.random_uniform(tf.shape(tiled_points), minval=-1, \
-                                         maxval=1) * self.noise
+class ImagePixelScale(ImageTransformation):
+    def transform_points(self, images, n):
+        k = tf.shape(images)[0]
+        scalings = tf.random.uniform((k,), -self.limit, self.limit)
+        scalings = tf.reshape((1 + scalings), (k,) + (1, 1, 1))
+        scaled_by_pixel_points = tf.clip_by_value(images * scalings, clip_value_min=0, clip_value_max=1)
+        return scaled_by_pixel_points
 
-        return points
+class ImageCropAndResize(ImageTransformation):
+    def transform_points(self, images, n):
+        k = tf.shape(images)[0]
+        bounds = tf.random_uniform((k, 1), -self.limit, self.limit)
+        boxes = tf.concat([bounds, bounds, 1 - bounds, 1 - bounds], axis=1)
+        cropped_images = tf.image.crop_and_resize(images, boxes, tf.range(k), [32, 32])
+        return cropped_images
+
 
 class ImageAdjustment(ConfidenceEstimationStrategy):
 
@@ -101,3 +110,17 @@ class ImageAdjustment(ConfidenceEstimationStrategy):
                      tf.random_uniform(tf.shape(tiled_points), minval=-1, \
                                        maxval=1) * self.noise
         return points
+
+
+def get_strat(strat, strat_param):
+    if strat == "uniform":
+        return UniformSampling(strat_param)
+    elif strat == "translate":
+        return ImageTranslation(strat_param)
+    elif strat == "rotate":
+        return ImageRotation(strat_param)
+    elif strat == "pixel_scale":
+        return ImagePixelScale(strat_param)
+    elif strat == "crop_resize":
+        return ImageCropAndResize(strat_param)
+    return None
