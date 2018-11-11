@@ -61,7 +61,7 @@ class ImageRotation(ImageTransformation):
 class ImagePixelScale(ImageTransformation):
     def transform_points(self, images, n):
         k = tf.shape(images)[0]
-        scalings = tf.random.uniform((k,), -self.limit, self.limit)
+        scalings = tf.random_uniform((k,), -self.limit, self.limit)
         scalings = tf.reshape((1 + scalings), (k,) + (1, 1, 1))
         scaled_by_pixel_points = tf.clip_by_value(images * scalings, clip_value_min=0, clip_value_max=1)
         return scaled_by_pixel_points
