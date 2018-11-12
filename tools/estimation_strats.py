@@ -123,4 +123,6 @@ def get_strat(strat, strat_param):
         return ImagePixelScale(strat_param)
     elif strat == "crop_resize":
         return ImageCropAndResize(strat_param)
+    elif strat == "brightness":
+        return ImageAdjustment(ImageAdjustment.Adjustment.BRIGHTNESS, max_delta=strat_param)
     return None
