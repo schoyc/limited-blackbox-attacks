@@ -21,6 +21,32 @@ class UniformSampling(ConfidenceEstimationStrategy):
 
         return noised_eval_im
 
+class GaussianNoise(ConfidenceEstimationStrategy):
+
+    def __init__(self, c):
+        self.c = c
+
+    def generate_samples(self, eval_points, n, img_shape):
+        tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [n, 1, 1, 1, 1])
+        noised_eval_im = tf.clip_by_value(tiled_points +
+                                          tf.random_normal(tf.shape(tiled_points)) * self.c , 0, 1)
+
+        return noised_eval_im
+
+
+class PoissonNoise(ConfidenceEstimationStrategy):
+
+    def __init__(self, lamda):
+        self.lamda = lamda
+
+    def generate_samples(self, eval_points, n, img_shape):
+        tiled_points = tf.tile(tf.expand_dims(eval_points, 0), [n, 1, 1, 1, 1])
+        noised_eval_im = tf.clip_by_value(tiled_points +
+                                          tf.random_poisson(self.lamda, tf.shape(tiled_points)), 0, 1)
+
+        return noised_eval_im
+
+
 class ImageTransformation(ConfidenceEstimationStrategy):
     def __init__(self, limit, noise=None):
         self.limit = limit
@@ -53,7 +79,7 @@ class ImageTranslation(ImageTransformation):
 
 class ImageRotation(ImageTransformation):
     def transform_points(self, images, n):
-        rotations = tf.random_uniform((tf.shape(images)[0],), -self.limit, self.limit)
+        rotations = tf.random_uniform((tf.shape(images)[0],), -self.limit, self.limit) * np.pi
 
         rotated_points = tf.contrib.image.rotate(images, rotations, interpolation='BILINEAR')
         return rotated_points
@@ -73,6 +99,15 @@ class ImageCropAndResize(ImageTransformation):
         boxes = tf.concat([bounds, bounds, 1 - bounds, 1 - bounds], axis=1)
         cropped_images = tf.image.crop_and_resize(images, boxes, tf.range(k), [32, 32])
         return cropped_images
+
+class ImageJPEGCompression(ImageTransformation):
+    def transform_points(self, images, n):
+        compress = lambda image: tf.image.random_jpeg_quality(image, 50 - self.limit, 50 + self.limit)
+        return tf.map_fn(compress, images)
+
+class ImageGammaAdjustment(ImageTransformation):
+    def transform_points(self, images, n):
+        return tf.pow(images, tf.random_uniform((n, 1, 1, 1), 1, 1 + self.limit, dtype=tf.float64))
 
 
 class ImageAdjustment(ConfidenceEstimationStrategy):
@@ -125,4 +160,18 @@ def get_strat(strat, strat_param):
         return ImageCropAndResize(strat_param)
     elif strat == "brightness":
         return ImageAdjustment(ImageAdjustment.Adjustment.BRIGHTNESS, max_delta=strat_param)
+    elif strat == "hue":
+        return ImageAdjustment(ImageAdjustment.Adjustment.HUE, max_delta=strat_param) # 0.22
+    elif strat == "contrast":
+        return ImageAdjustment(ImageAdjustment.Adjustment.CONTRAST, lower=strat_param, upper=1) # 0.55
+    elif strat == "saturation":
+        return ImageAdjustment(ImageAdjustment.Adjustment.SATURATION, lower=strat_param, upper=1) # 0.15
+    elif strat == "gaussian_noise":
+        return GaussianNoise(strat_param) # 0.095
+    elif strat == "poisson_noise":
+        return PoissonNoise(strat_param) # 0.0065
+    elif strat == "jpeg_compression":
+        return ImageJPEGCompression(strat_param) # 37.5
+    elif strat == "gamma":
+        return ImageGammaAdjustment(strat_param) # 0.35
     return None
