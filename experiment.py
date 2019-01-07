@@ -141,16 +141,20 @@ def main():
 
             c = Counter(results)
             num_iters = np.array(num_iters)
-            result_s = " ".join([str(key), "\t", str(np.mean(num_iters)), json.dumps(c)])
+            result_s = " ".join([str(key), "\t", str(np.mean(num_iters)), str(np.median(num_iters)), str(np.std(num_iters)), json.dumps(c)])
             results_s.append(result_s)
             print(result_s)
             all_results[key] = (results, num_iters, infos)
+
+            print("Summary so far:")
+            for s in results_s:
+                print(s)
 
     print("Summary:")
     for s in results_s:
         print(s)
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
-    np.savez_compressed("./experiment_results/%s_%s" % (args.exp_name, timestamp), results=all_results, params=np.array(args.exp_param_range))
+    np.savez_compressed("./experiment_results/%s_%s" % (args.exp_name, timestamp), results=all_results, params=np.array(args.exp_param_range), args=vars(args))
 
 
 def set_param(args, param, val):
