@@ -147,8 +147,8 @@ def main():
             all_results[key] = (results, num_iters, infos)
 
             print("Summary so far:")
-            for s in results_s:
-                print(s)
+            for result_s in results_s:
+                print(result_s)
 
     print("Summary:")
     for s in results_s:
