@@ -19,6 +19,7 @@ import time
 import scipy.misc
 import PIL
 import tools.estimation_strats as est_strats
+import tools.detection as detection
 
 import matplotlib
 matplotlib.use('Agg')
@@ -145,7 +146,7 @@ def main(args, gpus):
     def standard_loss(eval_points, noise):
         logits, preds = model(sess, eval_points)
         losses = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels)
-        return losses, noise
+        return losses, noise, None
 
     conf_est_strat = est_strats.get_strat(args.est_strat, args.strat_param)
     def label_only_loss(eval_points, noise):
@@ -155,8 +156,9 @@ def main(args, gpus):
         #         tf.random_uniform(tf.shape(tiled_points), minval=-1, \
         #         maxval=1)*args.label_only_sigma
         noised_eval_im = conf_est_strat.generate_samples(eval_points, zero_iters, initial_img.shape)
+        reshaped_noised_eval_im = tf.reshape(noised_eval_im, (-1,) + initial_img.shape)
 
-        logits, preds = model(sess, tf.reshape(noised_eval_im, (-1,) + initial_img.shape))
+        logits, preds = model(sess, reshaped_noised_eval_im)
         vals, inds = tf.nn.top_k(logits, k=k)
         real_inds = tf.reshape(inds, (zero_iters, batch_per_gpu, -1))
         rank_range = tf.range(start=k, limit=0, delta=-1, dtype=tf.float32)
@@ -168,7 +170,7 @@ def main(args, gpus):
         #       logits.shape, "inds", inds.shape, "real_inds", real_inds.shape,
         #       "rank_range", rank_range.shape, "tiled_rank_range", tiled_rank_range.shape,
         #       "batches_in", batches_in.shape)
-        return 1 - tf.reduce_mean(batches_in, [0, 2]), noise
+        return 1 - tf.reduce_mean(batches_in, [0, 2]), noise, reshaped_noised_eval_im
 
     def partial_info_loss(eval_points, noise):
         logits, preds = model(sess, eval_points)
@@ -179,11 +181,12 @@ def main(args, gpus):
         good_images = good_inds[:,0] # inds of img in batch that worked
         losses = tf.gather(losses, good_images)
         noise = tf.gather(noise, good_images)
-        return losses, noise
+        return losses, noise, None
 
     # GRADIENT ESTIMATION GRAPH
     grad_estimates = []
     final_losses = []
+    all_eval_points = []
     loss_fn = label_only_loss if label_only else \
                 (partial_info_loss if k < NUM_LABELS else standard_loss)
     for img_index, device in enumerate(gpus):
@@ -193,25 +196,30 @@ def main(args, gpus):
             noise = tf.concat([noise_pos, -noise_pos], axis=0)
             eval_points = x + args.sigma * noise
             # print("Eval points shape:", eval_points.shape)
-            losses, noise = loss_fn(eval_points, noise)
+            losses, noise, noised_eval_points = loss_fn(eval_points, noise)
         losses_tiled = tf.tile(tf.reshape(losses, (-1, 1, 1, 1)), (1,) + initial_img.shape)
         grad_estimates.append(tf.reduce_mean(losses_tiled * noise, axis=0)/args.sigma)
         final_losses.append(losses)
+        all_eval_points.append(noised_eval_points)
         print("[debug]", "eval_points", eval_points.shape, "losses", losses.shape, "losses_tiled", losses_tiled.shape)
     grad_estimate = tf.reduce_mean(grad_estimates, axis=0)
     final_losses = tf.concat(final_losses, axis=0)
+    all_eval_points = tf.concat(all_eval_points, axis=0)
+
 
     # GRADIENT ESTIMATION EVAL
     def get_grad(pt, spd, bs):
         num_batches = spd // bs
         losses = []
         grads = []
+        points = []
         feed_dict = {x: pt}
         for _ in range(num_batches):
-            loss, dl_dx_ = sess.run([final_losses, grad_estimate], feed_dict)
+            loss, dl_dx_, pts = sess.run([final_losses, grad_estimate, all_eval_points], feed_dict)
             losses.append(np.mean(loss))
             grads.append(dl_dx_)
-        return np.array(losses).mean(), np.mean(np.array(grads), axis=0)
+            points.append(points)
+        return np.array(losses).mean(), np.mean(np.array(grads), axis=0), np.concatenate(points, axis=0)
 
     # CONCURRENT VISUALIZATION
     if args.visualize:
@@ -244,6 +252,9 @@ def main(args, gpus):
     query_distances = []
     current_query, prev_query = adv, prev_adv
 
+    # Detector
+    detector = detection.Detector(threshold=0, k=50)
+
     # MAIN LOOP
     cur_query_adv, prev_query_adv = adv, prev_adv
     success, retval, info = False, args.max_queries, (timestamp, original_i, target_i, orig_class, target_class)
@@ -263,13 +274,17 @@ def main(args, gpus):
 
         # CHECK IF WE SHOULD STOP
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
+        detector.process_query(adv, num_queries)
         if padv == 1 and epsilon <= goal_epsilon:
             print('[log] early stopping at iteration %d, num queries %d' % (img_index, num_queries))
             success, retval = True, num_queries
             break
 
         prev_g = g
-        l, g = get_grad(adv, args.samples_per_draw, batch_size)
+        l, g, queries = get_grad(adv, args.samples_per_draw, batch_size)
+
+        # Detection
+        detector.process(queries, num_queries)
 
         # SIMPLE MOMENTUM
         g = args.momentum * prev_g + (1.0 - args.momentum) * g
@@ -305,6 +320,9 @@ def main(args, gpus):
             prev_query_adv = cur_query_adv
             cur_query_adv = proposed_adv
             adversarial_query_dists.append(query_dist(cur_query_adv, prev_query_adv))
+
+            # Detection
+            detector.process_query(proposed_adv, num_queries)
 
             if robust_in_top_k(target_class, proposed_adv, k):
                 if prop_de > 0:
