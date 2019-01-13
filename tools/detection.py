@@ -71,6 +71,7 @@ class Detector(object):
         if is_attack:
             self.history.append(num_queries_so_far + 1)
             self.detected_dists.append(min_avg_dist)
+            print("[encoder] Attack detected:", str(self.history), str(self.detected_dists))
             self.clear_memory()
 
     def clear_memory(self):

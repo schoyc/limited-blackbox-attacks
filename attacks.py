@@ -390,6 +390,8 @@ def main(args, gpus):
     # timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
     # np.savez("query_distances_i%d_%d_o%d_t%d_iters_%d_%d_%s" % (original_i, target_i, orig_class, target_class, img_index, max_iters, timestamp), dists=query_distances)
 
+    print("[detection]: params=%d,%f; num_queries=%d, result=%s,%d" % (args.zero_iters, args.strat_param, num_queries, str(success), retval))
+    print("[detection]:", num_queries, str(detector.history))
     return success, retval, info
 
 if __name__ == '__main__':
