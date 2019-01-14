@@ -18,7 +18,7 @@ class Detector(object):
         self.history = [] # Tracks number of queries (t) when attack was detected
         self.detected_dists = [] # Tracks knn-dist that was detected
 
-        self._init_encoder(encoder, weights_path)
+        self._init_encoder(weights_path)
 
     def _init_encoder(self, weights_path):
         # if encoder is None:
