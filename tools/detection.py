@@ -30,7 +30,7 @@ class Detector(object):
         encoder = cifar10_encoder()
         encoder.load_weights(weights_path, by_name=True)
         self.encoder = encoder
-        self.encode = lambda x : encoder.cifar_encoder.predict(x)
+        self.encode = lambda x : encoder.predict(x)
 
 
     def process(self, queries, num_queries_so_far):
