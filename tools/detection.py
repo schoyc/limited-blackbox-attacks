@@ -35,10 +35,11 @@ class Detector(object):
 
     def process(self, queries, num_queries_so_far):
         for query in queries:
-            self.process_query(query)
+            self.process_query(query, num_queries_so_far)
             num_queries_so_far += 1
 
     def process_query(self, query, num_queries_so_far):
+
         query = self.encode(query)
 
         if len(self.memory) == 0 and len(self.buffer) < self.K:
