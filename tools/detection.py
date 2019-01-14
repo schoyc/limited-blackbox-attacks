@@ -42,7 +42,7 @@ class Detector(object):
 
         query = np.squeeze(self.encode(query))
 
-        if len(self.memory) == 0 and len(self.buffer) < self.K:
+        if len(self.memory) == 0 and len(self.buffer) <= self.K:
             self.buffer.append(query)
             return False
 
