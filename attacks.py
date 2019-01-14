@@ -218,7 +218,7 @@ def main(args, gpus):
             loss, dl_dx_, pts = sess.run([final_losses, grad_estimate, all_eval_points], feed_dict)
             losses.append(np.mean(loss))
             grads.append(dl_dx_)
-            points.append(points)
+            points.append(pts)
         return np.array(losses).mean(), np.mean(np.array(grads), axis=0), np.concatenate(points, axis=0)
 
     # CONCURRENT VISUALIZATION
@@ -283,7 +283,9 @@ def main(args, gpus):
             break
 
         prev_g = g
+        print("Estimating the gradient...")
         l, g, queries = get_grad(adv, args.samples_per_draw, batch_size)
+        print("Finished...")
 
         # Detection
         print("Processing grad est queries...")
