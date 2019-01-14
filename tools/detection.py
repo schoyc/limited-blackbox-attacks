@@ -40,7 +40,7 @@ class Detector(object):
 
     def process_query(self, query, num_queries_so_far):
 
-        query = self.encode(query)
+        query = np.squeeze(self.encode(query))
 
         if len(self.memory) == 0 and len(self.buffer) < self.K:
             self.buffer.append(query)
@@ -48,7 +48,7 @@ class Detector(object):
 
         k = self.K
 
-        queries = np.concatenate(self.buffer, axis=0)
+        queries = np.stack(self.buffer, axis=0)
         dists = np.matmul(queries, query)
         k_nearest_dists = np.partition(dists, k)[:k, None]
         avg_dist = np.mean(k_nearest_dists, axis=-1)
@@ -64,7 +64,7 @@ class Detector(object):
 
         self.buffer.append(query)
         if len(self.buffer) >= self.chunk_size + k + 1:
-            self.memory.append(np.concatenate(self.buffer[:self.chunk_size], axis=0))
+            self.memory.append(np.stack(self.buffer[:self.chunk_size], axis=0))
             self.buffer = self.buffer[self.chunk_size:]
 
 
