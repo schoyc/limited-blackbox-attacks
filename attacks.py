@@ -274,23 +274,23 @@ def main(args, gpus):
 
         # CHECK IF WE SHOULD STOP
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
-        print("Processing adv single...")
+        # print("Processing adv single...")
         detector.process_query(adv, num_queries)
-        print("Finished...")
+        # print("Finished...")
         if padv == 1 and epsilon <= goal_epsilon:
             print('[log] early stopping at iteration %d, num queries %d' % (img_index, num_queries))
             success, retval = True, num_queries
             break
 
         prev_g = g
-        print("Estimating the gradient...")
+        # print("Estimating the gradient...")
         l, g, queries = get_grad(adv, args.samples_per_draw, batch_size)
-        print("Finished...")
+        # print("Finished...")
 
         # Detection
-        print("Processing grad est queries...")
+        # print("Processing grad est queries...")
         detector.process(queries, num_queries)
-        print("Finished...")
+        # print("Finished...")
 
         # SIMPLE MOMENTUM
         g = args.momentum * prev_g + (1.0 - args.momentum) * g
@@ -328,9 +328,9 @@ def main(args, gpus):
             adversarial_query_dists.append(query_dist(cur_query_adv, prev_query_adv))
 
             # Detection
-            print("Processing loop query...")
+            # print("Processing loop query...")
             detector.process_query(proposed_adv, num_queries)
-            print("Finished...")
+            # print("Finished...")
 
             if robust_in_top_k(target_class, proposed_adv, k):
                 if prop_de > 0:
