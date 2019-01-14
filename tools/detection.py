@@ -28,7 +28,7 @@ class Detector(object):
         #     # encoder = SiameseEncoder(margin=np.sqrt(10), learning_rate=1e-4)
         #     # encoder.init_sess()
         encoder = cifar10_encoder()
-        encoder.load_weights(weights_path=weights_path)
+        encoder.load_weights(weights_path, by_name=True)
         self.encoder = encoder
         self.encode = lambda x : encoder.cifar_encoder.predict(x)
 
