@@ -48,7 +48,7 @@ class Detector(object):
 
         k = self.K
 
-        queries = np.stack(self.buffer, axis=0)
+        queries = np.concatenate(self.buffer, axis=0)
         dists = np.matmul(queries, query)
         k_nearest_dists = np.partition(dists, k)[:k, None]
         avg_dist = np.mean(k_nearest_dists, axis=-1)
@@ -64,7 +64,7 @@ class Detector(object):
 
         self.buffer.append(query)
         if len(self.buffer) >= self.chunk_size + k + 1:
-            self.memory.append(np.stack(self.buffer[:self.chunk_size], axis=0))
+            self.memory.append(np.concatenate(self.buffer[:self.chunk_size], axis=0))
             self.buffer = self.buffer[self.chunk_size:]
 
 
