@@ -6,7 +6,7 @@ from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2
 
 class Detector(object):
 
-    def __init__(self, threshold, K=50, encoder=None, size=None, chunk_size=1000, weights_path="./encoder_1.h5"):
+    def __init__(self, threshold, K=50, size=None, chunk_size=1000, weights_path="./encoder_1.h5"):
         self.threshold = threshold
         self.K = K
         self.size = size
@@ -20,17 +20,17 @@ class Detector(object):
 
         self._init_encoder(encoder, weights_path)
 
-    def _init_encoder(self, encoder, weights_path):
-        if encoder is None:
-            self.encode = lambda x: x
-        else:
-            # Restore model from tf session
-            # encoder = SiameseEncoder(margin=np.sqrt(10), learning_rate=1e-4)
-            # encoder.init_sess()
-            encoder = cifar10_encoder()
-            encoder.load_weights(weights_path=weights_path)
-            self.encoder = encoder
-            self.encode = lambda x : encoder.cifar_encoder.predict(x)
+    def _init_encoder(self, weights_path):
+        # if encoder is None:
+        #     self.encode = lambda x: x
+        # else:
+        #     # Restore model from tf session
+        #     # encoder = SiameseEncoder(margin=np.sqrt(10), learning_rate=1e-4)
+        #     # encoder.init_sess()
+        encoder = cifar10_encoder()
+        encoder.load_weights(weights_path=weights_path)
+        self.encoder = encoder
+        self.encode = lambda x : encoder.cifar_encoder.predict(x)
 
 
     def process(self, queries, num_queries_so_far):

@@ -253,7 +253,7 @@ def main(args, gpus):
     current_query, prev_query = adv, prev_adv
 
     # Detector
-    detector = detection.Detector(threshold=0, k=50)
+    detector = detection.Detector(threshold=1.44, K=50)
 
     # MAIN LOOP
     cur_query_adv, prev_query_adv = adv, prev_adv
