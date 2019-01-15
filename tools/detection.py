@@ -49,13 +49,13 @@ class Detector(object):
         k = self.K
 
         queries = np.stack(self.buffer, axis=0)
-        dists = np.matmul(queries, query)
+        dists = np.linalg.norm(queries - query, axis=-1)
 
         all_dists = []
         all_dists.append(dists)
 
-        for buf in self.memory:
-            dists = np.matmul(buf, query)
+        for queries in self.memory:
+            dists = np.linalg.norm(queries - query, axis=-1)
             all_dists.append(dists)
 
         dists = np.concatenate(all_dists)
@@ -67,12 +67,12 @@ class Detector(object):
             self.memory.append(np.stack(self.buffer[:self.chunk_size], axis=0))
             self.buffer = self.buffer[self.chunk_size:]
 
-
+        # print("[debug]", num_queries_so_far, k_avg_dist)
         is_attack = k_avg_dist < self.threshold
         if is_attack:
             self.history.append(num_queries_so_far + 1)
             self.detected_dists.append(k_avg_dist)
-            print("[encoder] Attack detected:", str(self.history), str(self.detected_dists))
+            # print("[encoder] Attack detected:", str(self.history), str(self.detected_dists))
             self.clear_memory()
 
     def clear_memory(self):
