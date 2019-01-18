@@ -46,6 +46,7 @@ class Detector(object):
 
         if len(self.memory) == 0 and len(self.buffer) < self.K:
             self.buffer.append(query)
+            self.num_queries += 1
             return False
 
         k = self.K
