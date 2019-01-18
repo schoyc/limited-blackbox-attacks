@@ -10,12 +10,14 @@ class Detector(object):
         self.threshold = threshold
         self.K = K
         self.size = size
+        self.num_queries = 0
 
         self.buffer = []
         self.memory = []
         self.chunk_size = chunk_size
 
         self.history = [] # Tracks number of queries (t) when attack was detected
+        self.history_by_attack = []
         self.detected_dists = [] # Tracks knn-dist that was detected
 
         self._init_encoder(weights_path)
@@ -42,35 +44,38 @@ class Detector(object):
 
         query = np.squeeze(self.encode(query))
 
-        if len(self.memory) == 0 and len(self.buffer) <= self.K:
+        if len(self.memory) == 0 and len(self.buffer) < self.K:
             self.buffer.append(query)
             return False
 
         k = self.K
-
-        queries = np.stack(self.buffer, axis=0)
-        dists = np.linalg.norm(queries - query, axis=-1)
-
         all_dists = []
-        all_dists.append(dists)
+
+        if len(self.buffer) > 0:
+            queries = np.stack(self.buffer, axis=0)
+            dists = np.linalg.norm(queries - query, axis=-1)
+            all_dists.append(dists)
 
         for queries in self.memory:
             dists = np.linalg.norm(queries - query, axis=-1)
             all_dists.append(dists)
 
         dists = np.concatenate(all_dists)
-        k_nearest_dists = np.partition(dists, k)[:k, None]
+        k_nearest_dists = np.partition(dists, k - 1)[:k, None]
         k_avg_dist = np.mean(k_nearest_dists)
 
         self.buffer.append(query)
-        if len(self.buffer) >= self.chunk_size + k + 1:
-            self.memory.append(np.stack(self.buffer[:self.chunk_size], axis=0))
-            self.buffer = self.buffer[self.chunk_size:]
+        self.num_queries += 1
+
+        if len(self.buffer) >= self.chunk_size:
+            self.memory.append(np.stack(self.buffer, axis=0))
+            self.buffer = []
 
         # print("[debug]", num_queries_so_far, k_avg_dist)
         is_attack = k_avg_dist < self.threshold
         if is_attack:
-            self.history.append(num_queries_so_far + 1)
+            self.history.append(self.num_queries)
+            self.history_by_attack.append(num_queries_so_far + 1)
             self.detected_dists.append(k_avg_dist)
             # print("[encoder] Attack detected:", str(self.history), str(self.detected_dists))
             self.clear_memory()
@@ -78,6 +83,14 @@ class Detector(object):
     def clear_memory(self):
         self.buffer = []
         self.memory = []
+
+    def get_detections(self):
+        history = self.history
+        epochs = []
+        for i in range(len(history) - 1):
+            epochs.append(history[i + 1] - history[i])
+
+        return epochs
 
 
 class SiameseEncoder(object):

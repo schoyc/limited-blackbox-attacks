@@ -350,7 +350,7 @@ def main(args, gpus):
                 if prop_de == 0:
                     # raise ValueError("Did not converge.")
                     print("[error] Did not converge!")
-                    return False, -1, info
+                    return False, -1, info, detector
                 if prop_de < 2e-3:
                     prop_de = 0
                 current_lr = max_lr
@@ -383,7 +383,7 @@ def main(args, gpus):
             np.save(os.path.join(out_dir, '%s.npy' % (img_index+1)), adv)
             scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (img_index+1)), adv)
 
-    print("[error] hit max iterations")
+    # print("[error] hit max iterations")
     #     if img_index < 100:
     #         advs.append(adv)
     #
@@ -399,8 +399,8 @@ def main(args, gpus):
     # np.savez("query_distances_i%d_%d_o%d_t%d_iters_%d_%d_%s" % (original_i, target_i, orig_class, target_class, img_index, max_iters, timestamp), dists=query_distances)
 
     print("[detection]: params=%d,%f; num_queries=%d, result=%s,%d" % (args.zero_iters, args.strat_param, num_queries, str(success), retval))
-    print("[detection]:", num_queries, str(detector.history))
-    return success, retval, info
+    print("[detection]:", num_queries, str(detector.get_detections()))
+    return success, retval, info, detector
 
 if __name__ == '__main__':
     main()

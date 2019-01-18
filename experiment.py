@@ -113,19 +113,23 @@ def main():
             num_iters = []
             results = []
             infos = []
+            detections_success = []
+            detections_failure = []
 
             print("[experiment] %s=%f, %s=%f" % (args.exp_param, val, args.exp_param_2, val_2))
             key = (val, val_2)
             for i in range(args.num_exp_per_param):
                 # if i % s == 0:
-                success, retval, info = attacks.main(args, gpus)
+                success, retval, info, detector = attacks.main(args, gpus)
 
                 result = retval
                 if success:
                     result = 1
                     num_iters.append(retval)
+                    detections_success.append((detector.history, detector.detected_dists))
                 else:
                     result = min(retval, 0)
+                    detections_failure.append((detector.history, detector.detected_dists))
 
                 print("[run] Experiment %d/%d: result %d" % (i, args.num_exp_per_param, result))
 
@@ -154,7 +158,9 @@ def main():
     for s in results_s:
         print(s)
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
-    np.savez_compressed("./experiment_results/%s_%s" % (args.exp_name, timestamp), results=all_results, params=np.array(args.exp_param_range), args=vars(args))
+    np.savez_compressed("./experiment_results/%s_%s" % (args.exp_name, timestamp), results=all_results,
+                        params=np.array(args.exp_param_range), args=vars(args),
+                        detections_success=detections_success, detections_failure=detections_failure)
 
 
 def set_param(args, param, val):
