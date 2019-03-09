@@ -28,7 +28,8 @@ from tools.logging_utils import *
 
 # from tools.inception_v3_imagenet import model
 # from tools.imagenet_labels import label_to_name
-from tools.tf_sample_cifar10 import model
+from tools.tf_sample_cifar10 import model as sample_cifar_model
+from tools.resnet_v1_cifar10 import model
 from tensorflow.keras.datasets import cifar10
 
 import datetime
