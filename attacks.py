@@ -5,10 +5,10 @@ import tensorflow as tf
 # SESSION INITIALIZATION
 config_sess = tf.ConfigProto()
 config_sess.gpu_options.allow_growth = True
-config_sess.gpu_options.per_process_gpu_memory_fraction = 0.5
+# config_sess.gpu_options.per_process_gpu_memory_fraction = 0.5
 # sess = tf.Session(config=config_sess)
 sess = tf.InteractiveSession(config=config_sess)
-
+# sess = tf.InteractiveSession()
 
 from tools.utils import *
 import json
@@ -28,7 +28,7 @@ from tools.logging_utils import *
 
 # from tools.inception_v3_imagenet import model
 # from tools.imagenet_labels import label_to_name
-from tools.tf_sample_cifar10 import model as sample_cifar_model
+# from tools.tf_sample_cifar10 import model
 from tools.resnet_v1_cifar10 import model
 from tensorflow.keras.datasets import cifar10
 
@@ -44,7 +44,7 @@ def main(args, gpus):
     (_, _), (x_test, y_test) = cifar10.load_data()
 
     specified_imgs = args.img_index is not None and args.target_img_index is not None
-    img_index = np.random.randint(0, x_test.shape[0]) if specified_imgs else args.img_index
+    img_index = np.random.randint(0, x_test.shape[0]) if not specified_imgs else args.img_index
 
     if args.img_path:
         initial_img = np.asarray(Image.open(args.img_path).resize((SIZE, SIZE)))
@@ -256,6 +256,11 @@ def main(args, gpus):
     # Detector
     detector = detection.Detector(threshold=1.44, K=50)
 
+    # Debugging
+    def debug_time(start_time, comment):
+        duration = (time.time() - start_time) / 60.
+        # print("[debug]", "time %.4f" % duration, comment)
+
     # MAIN LOOP
     cur_query_adv, prev_query_adv = adv, prev_adv
     success, retval, info = False, args.max_queries, (timestamp, original_i, target_i, orig_class, target_class)
@@ -274,10 +279,12 @@ def main(args, gpus):
         # print("[info] query dist:", d)
 
         # CHECK IF WE SHOULD STOP
+        temp_t = time.time()
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
         # print("Processing adv single...")
         detector.process_query(adv, num_queries)
         # print("Finished...")
+        debug_time(temp_t, "Single query check/detect adv")
         if padv == 1 and epsilon <= goal_epsilon:
             print('[log] early stopping at iteration %d, num queries %d' % (img_index, num_queries))
             success, retval = True, num_queries
@@ -285,13 +292,19 @@ def main(args, gpus):
 
         prev_g = g
         # print("Estimating the gradient...")
+        temp_t = time.time()
         l, g, queries = get_grad(adv, args.samples_per_draw, batch_size)
         # print("Finished...")
+        debug_time(temp_t, "Estimate gradient")
 
         # Detection
+        temp_t = time.time()
         # print("Processing grad est queries...")
         detector.process(queries, num_queries)
         # print("Finished...")
+        debug_time(temp_t, "Process grad est queries")
+
+        temp_t = time.time()
 
         # SIMPLE MOMENTUM
         g = args.momentum * prev_g + (1.0 - args.momentum) * g
@@ -360,13 +373,14 @@ def main(args, gpus):
 
         current_query, prev_query = adv, prev_adv
 
+        debug_time(temp_t, "Parameter tuning/decay")
         # BOOK-KEEPING STUFF
         num_queries += args.samples_per_draw * (zero_iters if label_only else 1)
 
         log_text = 'Step %05d: loss %.4f lr %.2E eps %.3f (time %.4f)' % (img_index, l, \
                         current_lr, epsilon, time.time() - start)
         log_file.write(log_text + '\n')
-        if img_index % (max_iters // 10) == 0:
+        if img_index % (max_iters // 100) == 0:
             print(log_text)
 
         if img_index % log_iters == 0:
