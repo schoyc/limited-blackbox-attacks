@@ -138,8 +138,8 @@ def main():
 
                 if imgs_specified:
                     orig_i, target_i, target_class = img_idxs[i]
-                    args.img_index, args.target_img_index = orig_i, target_i
-                    args.target_class = target_class
+                    args.img_index, args.target_img_index = int(orig_i), int(target_i)
+                    args.target_class = int(target_class)
 
                 success, retval, info, detectors, distortion = attacks.main(args, gpus)
 
