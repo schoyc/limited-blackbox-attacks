@@ -112,7 +112,7 @@ class ExperimentDetectors():
 
     def process_query(self, query, num_queries_so_far):
         for _, detector in self.detectors.items():
-            detector.process(query, num_queries_so_far)
+            detector.process_query(query, num_queries_so_far)
 
 
 
