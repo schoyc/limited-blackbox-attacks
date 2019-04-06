@@ -90,11 +90,16 @@ def main(args, gpus):
         if target_class == -1:
             raise ValueError("Partial-information attack is a targeted attack.")
         # adv = image_of_class(target_class, IMAGENET_PATH)
+        if specified_imgs:
+            target_i = args.target_img_index
+            adv = x_test[target_i, None][0]
+        else:
+            mask = (y_test == target_class).flatten()
+            x_test_target_class = x_test[mask]
 
-        mask = (y_test == target_class).flatten()
-        x_test_target_class = x_test[mask]
-        target_i = np.random.randint(0, x_test_target_class.shape[0]) if not specified_imgs else args.target_img_index
-        adv = x_test_target_class[target_i, None][0]
+            target_i = np.random.randint(0, x_test_target_class.shape[0])
+            adv = x_test_target_class[target_i, None][0]
+
         adv = adv.astype(np.float32) / 255.0
         epsilon = args.starting_eps
         delta_epsilon = args.starting_delta_eps
@@ -254,7 +259,7 @@ def main(args, gpus):
     current_query, prev_query = adv, prev_adv
 
     # Detector
-    detector = detection.Detector(threshold=1.44, K=50)
+    detector = detection.ExperimentDetectors()
 
     # Debugging
     def debug_time(start_time, comment):
@@ -264,6 +269,7 @@ def main(args, gpus):
     # MAIN LOOP
     cur_query_adv, prev_query_adv = adv, prev_adv
     success, retval, info = False, args.max_queries, (timestamp, original_i, target_i, orig_class, target_class)
+    distortion = None
     advs = []
     entire_start = time.time()
     for img_index in range(max_iters):
@@ -288,6 +294,7 @@ def main(args, gpus):
         if padv == 1 and epsilon <= goal_epsilon:
             print('[log] early stopping at iteration %d, num queries %d' % (img_index, num_queries))
             success, retval = True, num_queries
+            distortion = np.linalg.norm(initial_img - adv)
             break
 
         prev_g = g
@@ -364,7 +371,7 @@ def main(args, gpus):
                 if prop_de == 0:
                     # raise ValueError("Did not converge.")
                     print("[error] Did not converge!")
-                    return False, -1, info, detector
+                    return False, -1, info, detector, distortion
                 if prop_de < 2e-3:
                     prop_de = 0
                 current_lr = max_lr
@@ -414,8 +421,8 @@ def main(args, gpus):
     # np.savez("query_distances_i%d_%d_o%d_t%d_iters_%d_%d_%s" % (original_i, target_i, orig_class, target_class, img_index, max_iters, timestamp), dists=query_distances)
 
     print("[detection]: params=%d,%f; num_queries=%d, result=%s,%d" % (args.zero_iters, args.strat_param, num_queries, str(success), retval))
-    print("[detection]:", num_queries, str(detector.get_detections()))
-    return success, retval, info, detector
+    print("[detection]: num_queries=%d, num_detections=%d", num_queries, len(detector.get_detections()))
+    return success, retval, info, detector, distortion
 
 if __name__ == '__main__':
     main()

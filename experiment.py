@@ -68,6 +68,7 @@ def main():
     parser.add_argument('--num-exp-per-param', type=int, default=100)
     parser.add_argument('--strat-param', type=float, default=1)
     parser.add_argument('--est-strat', type=str, default="uniform")
+    parser.add_argument('--img-idxs', type=str, default=None, help='Image indices to use')
     args = parser.parse_args()
 
     # Data checks
@@ -102,9 +103,19 @@ def main():
     print(args_text)
 
     all_results = {}
+    main_results = {}
+    detection_results = {}
     results_s = []
     print("Experiment with param:", str(args.exp_param))
     s = args.num_exp_per_param // 20 if args.num_exp_per_param > 10 else 2
+
+    imgs_specified = args.img_idxs is not None
+    if imgs_specified:
+        img_idxs = []
+        npz = np.load(args.img_idxs)
+        for orig_i, target_i, target_class in zip(npz['original_idxs'], npz['target_idxs'], npz['target_classes']):
+            img_idxs.append((orig_i, target_i, target_class))
+        assert args.num_exp_per_param <= len(img_idxs)
 
     for val in args.exp_param_range:
         set_param(args, args.exp_param, val)
@@ -113,23 +124,44 @@ def main():
             num_iters = []
             results = []
             infos = []
-            detections_success = []
-            detections_failure = []
+            detections_success = {}
+            detections_failure = {}
+            l2_distortions = []
+            num_detections_success = {}
+            num_detections_failure = {}
 
             print("[experiment] %s=%f, %s=%f" % (args.exp_param, val, args.exp_param_2, val_2))
             key = (val, val_2)
+
             for i in range(args.num_exp_per_param):
                 # if i % s == 0:
-                success, retval, info, detector = attacks.main(args, gpus)
+
+                if imgs_specified:
+                    orig_i, target_i, target_class = img_idxs[i]
+                    args.img_index, args.target_img_index = orig_i, target_i
+                    args.target_class = target_class
+
+                success, retval, info, detectors, distortion = attacks.main(args, gpus)
 
                 result = retval
+                detections, num_detections = detections_success, num_detections_success
                 if success:
                     result = 1
                     num_iters.append(retval)
-                    detections_success.append((detector.history, detector.detected_dists))
+                    l2_distortions.append(distortion)
                 else:
                     result = min(retval, 0)
-                    detections_failure.append((detector.history, detector.detected_dists))
+                    detections, num_detections = detections_failure, num_detections_failure
+
+                for d_name, detector in detectors.detectors.items():
+                    if d_name not in detections:
+                        detections[d_name] = []
+
+                    if d_name not in num_detections:
+                        num_detections[d_name] = []
+
+                    detections[d_name].append((detector.history, detector.detected_dists))
+                    num_detections[d_name].append(len(detector.get_detections()))
 
                 print("[run] Experiment %d/%d: result %d" % (i, args.num_exp_per_param, result))
 
@@ -142,13 +174,27 @@ def main():
                   n_i = np.array(num_iters)
                   print(str(key), "\t", str(np.mean(n_i)), str(np.median(n_i)), str(np.std(n_i)), json.dumps(c))
 
+            mean_distortion = np.mean(l2_distortions)
+            success_rate = len(num_iters) / args.num_exp_per_param
+            mean_iters = np.mean(num_iters)
 
             c = Counter(results)
             num_iters = np.array(num_iters)
             result_s = " ".join([str(key), "\t", str(np.mean(num_iters)), str(np.median(num_iters)), str(np.std(num_iters)), json.dumps(c)])
             results_s.append(result_s)
             print(result_s)
-            all_results[key] = (results, num_iters, infos)
+            all_results[key] = (results, num_iters, l2_distortions, infos)
+
+            main_det_results = {}
+            for d_name in detections_success:
+                detection_results[key + (d_name, )] = (detections_success[d_name], detections_failure[d_name])
+
+                mean_detections_success = np.mean(num_detections_success[d_name])
+                mean_detections_failure = np.mean(num_detections_failure[d_name])
+                mean_detections = np.mean(num_detections_success[d_name] + num_detections_failure[d_name])
+                main_det_results[d_name] = (mean_detections, mean_detections_success, mean_detections_failure)
+
+            main_results[key] = (success_rate, mean_distortion, mean_iters, main_det_results)
 
             print("Summary so far:")
             for result_s in results_s:
@@ -158,9 +204,9 @@ def main():
     for s in results_s:
         print(s)
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
-    np.savez_compressed("./experiment_results/%s_%s" % (args.exp_name, timestamp), results=all_results,
-                        params=np.array(args.exp_param_range), args=vars(args),
-                        detections_success=detections_success, detections_failure=detections_failure)
+    np.savez_compressed("./experiment_results/%s_%s" % (args.exp_name, timestamp), attack_results=all_results,
+                        detection_results=detection_results, main_results=main_results,
+                        params=np.array(args.exp_param_range), args=vars(args))
 
 
 def set_param(args, param, val):
