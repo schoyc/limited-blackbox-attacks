@@ -421,7 +421,8 @@ def main(args, gpus):
     # np.savez("query_distances_i%d_%d_o%d_t%d_iters_%d_%d_%s" % (original_i, target_i, orig_class, target_class, img_index, max_iters, timestamp), dists=query_distances)
 
     print("[detection]: params=%d,%f; num_queries=%d, result=%s,%d" % (args.zero_iters, args.strat_param, num_queries, str(success), retval))
-    print("[detection]: num_queries=%d, num_detections=%d", num_queries, len(detector.get_detections()))
+    num_detections = [(d_name, len(detector.get_detections())) for d_name, detector in detector.detectors.items()]
+    print("[detection]: num_queries",  num_queries, "num_detections", num_detections)
     return success, retval, info, detector, distortion
 
 if __name__ == '__main__':
