@@ -33,7 +33,7 @@ from tools.resnet_v1_cifar10 import model
 from tensorflow.keras.datasets import cifar10
 
 import datetime
-timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
+timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d")
 
 IMAGENET_PATH=""
 NUM_LABELS=10
@@ -68,6 +68,7 @@ def main(args, gpus):
 
     batch_size = args.batch_size
     out_dir = os.path.join(args.out_dir, timestamp, '')
+    # out_dir = args.out_dir
     print(out_dir)
     os.makedirs(out_dir, exist_ok=True)
     epsilon = args.epsilon

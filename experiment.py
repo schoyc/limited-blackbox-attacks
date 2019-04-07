@@ -94,9 +94,9 @@ def main():
         ))
 
     # CLEAR THE PATH
-    # if os.path.exists(args.out_dir):
-    #     shutil.rmtree(args.out_dir)
-    # os.makedirs(args.out_dir)
+    if os.path.exists(args.out_dir):
+        shutil.rmtree(args.out_dir)
+    os.makedirs(args.out_dir)
 
     # PRINT PARAMS
     args_text = json.dumps(args.__dict__)
@@ -204,6 +204,7 @@ def main():
     for s in results_s:
         print(s)
     timestamp = datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d_%H%M")
+    os.makedirs("./experiment_results", exist_ok=True)
     np.savez_compressed("./experiment_results/%s_%s" % (args.exp_name, timestamp), attack_results=all_results,
                         detection_results=detection_results, main_results=main_results,
                         params=np.array(args.exp_param_range), args=vars(args))
