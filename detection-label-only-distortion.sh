@@ -1,0 +1,4 @@
+# brightness
+python experiment.py --exp-name detection_brightness0_18 --est-strat brightness --exp-param zero-iters --num-exp-per-param 100 --img-idxs image_idxs.npz --exp-param-range 2 50 --exp-param-2 strat-param --exp-param-range-2 0.18 --max-queries 100000 --top-k 1 --img-index 0 --out-dir ./out_label_only --adv-thresh 0.15 --sigma 0.095 --plateau-length 20 --samples-per-draw 100 --batch-size 4 --min-lr 1e-4 --label-only --zero-iters 50 --label-only-sigma 0.032 --conservative 4
+# pixel_scale
+python experiment.py --exp-name detection_pixel_scale0_34 --est-strat pixel_scale --exp-param zero-iters --num-exp-per-param 100 --img-idxs image_idxs.npz --exp-param-range 2 50 --exp-param-2 strat-param --exp-param-range-2 0.34 --max-queries 100000 --top-k 1 --img-index 0 --out-dir ./out_label_only --adv-thresh 0.15 --sigma 0.095 --plateau-length 20 --samples-per-draw 100 --batch-size 4 --min-lr 1e-4 --label-only --zero-iters 50 --label-only-sigma 0.032 --conservative 4
