@@ -260,7 +260,8 @@ def main(args, gpus):
     current_query, prev_query = adv, prev_adv
 
     # Detector
-    detector = detection.ExperimentDetectors()
+    run_detection = not args.no_detection
+    detector = detection.ExperimentDetectors(active=run_detection)
 
     # Debugging
     def debug_time(start_time, comment):
@@ -269,6 +270,7 @@ def main(args, gpus):
 
     # MAIN LOOP
     cur_query_adv, prev_query_adv = adv, prev_adv
+    
     success, retval, info = False, args.max_queries, (timestamp, original_i, target_i, orig_class, target_class)
     distortion = None
     advs = []

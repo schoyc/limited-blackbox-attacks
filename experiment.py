@@ -35,7 +35,7 @@ def main():
                         dir of grid directories')
     parser.add_argument('--log-iters', type=int, default=1)
     parser.add_argument('--restore', type=str, help='restore path of img')
-    parser.add_argument('--momentum', type=float, default=0.0)
+    parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--max-queries', type=int, default=10000)
     parser.add_argument('--save-iters', type=int, default=50)
     parser.add_argument('--plateau-drop', type=float, default=2.0)
@@ -69,6 +69,7 @@ def main():
     parser.add_argument('--strat-param', type=float, default=1)
     parser.add_argument('--est-strat', type=str, default="uniform")
     parser.add_argument('--img-idxs', type=str, default=None, help='Image indices to use')
+    parser.add_argument('--no-detection', action='store_true')
     args = parser.parse_args()
 
     # Data checks

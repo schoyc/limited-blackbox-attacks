@@ -96,10 +96,13 @@ class SimilarityDetector(Detector):
         self.encode = lambda x : encoder.predict(np.expand_dims(x, axis=0))
 
 class ExperimentDetectors():
-    def __init__(self):
+    def __init__(self, active=True):
+        self.active = active
+
         detectors = [
             ("similarity", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5")),
-            ("l2", L2Detector(threshold=5.069, K=50))
+            ("l2", L2Detector(threshold=5.069, K=50)),
+            ("sim-no-brightness", SimilarityDetector(threshold=1.56, K=50, weights_path="./encoders/encoder_no_brightness.h5")),
         ]
 
         self.detectors = OrderedDict({})
@@ -107,10 +110,16 @@ class ExperimentDetectors():
             self.detectors[d_name] = detector
 
     def process(self, queries, num_queries_so_far):
+        if not self.active:
+            return
+
         for _, detector in self.detectors.items():
             detector.process(queries, num_queries_so_far)
 
     def process_query(self, query, num_queries_so_far):
+        if not self.active:
+            return
+
         for _, detector in self.detectors.items():
             detector.process_query(query, num_queries_so_far)
 
