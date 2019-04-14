@@ -2,14 +2,6 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 
-# SESSION INITIALIZATION
-config_sess = tf.ConfigProto()
-config_sess.gpu_options.allow_growth = True
-# config_sess.gpu_options.per_process_gpu_memory_fraction = 0.5
-# sess = tf.Session(config=config_sess)
-sess = tf.InteractiveSession(config=config_sess)
-# sess = tf.InteractiveSession()
-
 from tools.utils import *
 import json
 import pdb
@@ -40,6 +32,14 @@ NUM_LABELS=10
 SIZE = 32
 
 def main(args, gpus):
+    # SESSION INITIALIZATION
+    config_sess = tf.ConfigProto()
+    config_sess.gpu_options.allow_growth = True
+    # config_sess.gpu_options.per_process_gpu_memory_fraction = 0.5
+    # sess = tf.Session(config=config_sess)
+    sess = tf.InteractiveSession(config=config_sess)
+    # sess = tf.InteractiveSession()
+
     # INITIAL IMAGE AND CLASS SELECTION
     (_, _), (x_test, y_test) = cifar10.load_data()
 
@@ -138,13 +138,13 @@ def main(args, gpus):
     eval_percent_adv = tf.equal(eval_preds[0], tf.constant(target_class, tf.int64))
 
     # TENSORBOARD SETUP
-    empirical_loss = tf.placeholder(dtype=tf.float32, shape=())
-    lr_placeholder = tf.placeholder(dtype=tf.float32, shape=())
-    loss_vs_queries = tf.summary.scalar('empirical loss vs queries', empirical_loss)
-    loss_vs_steps = tf.summary.scalar('empirical loss vs step', empirical_loss)
-    lr_vs_queries = tf.summary.scalar('lr vs queries', lr_placeholder)
-    lr_vs_steps = tf.summary.scalar('lr vs step', lr_placeholder)
-    writer = tf.summary.FileWriter(out_dir, graph=sess.graph)
+    # empirical_loss = tf.placeholder(dtype=tf.float32, shape=())
+    # lr_placeholder = tf.placeholder(dtype=tf.float32, shape=())
+    # loss_vs_queries = tf.summary.scalar('empirical loss vs queries', empirical_loss)
+    # loss_vs_steps = tf.summary.scalar('empirical loss vs step', empirical_loss)
+    # lr_vs_queries = tf.summary.scalar('lr vs queries', lr_placeholder)
+    # lr_vs_steps = tf.summary.scalar('lr vs step', lr_placeholder)
+    # writer = tf.summary.FileWriter(out_dir, graph=sess.graph)
     log_file = open(os.path.join(out_dir, 'log.txt'), 'w+')
     with open(os.path.join(out_dir, 'args.json'), 'w') as args_file:
         json.dump(args.__dict__, args_file)
@@ -393,20 +393,20 @@ def main(args, gpus):
         if img_index % (max_iters // 100) == 0:
             print(log_text)
 
-        if img_index % log_iters == 0:
-            lvq, lvs, lrvq, lrvs = sess.run([loss_vs_queries, loss_vs_steps,
-                                             lr_vs_queries, lr_vs_steps], {
-                                                 empirical_loss:l,
-                                                 lr_placeholder:current_lr
-                                             })
-            writer.add_summary(lvq, num_queries)
-            writer.add_summary(lrvq, num_queries)
-            writer.add_summary(lvs, img_index)
-            writer.add_summary(lrvs, img_index)
+        # if img_index % log_iters == 0:
+        #     lvq, lvs, lrvq, lrvs = sess.run([loss_vs_queries, loss_vs_steps,
+        #                                      lr_vs_queries, lr_vs_steps], {
+        #                                          empirical_loss:l,
+        #                                          lr_placeholder:current_lr
+        #                                      })
+        #     writer.add_summary(lvq, num_queries)
+        #     writer.add_summary(lrvq, num_queries)
+        #     writer.add_summary(lvs, img_index)
+        #     writer.add_summary(lrvs, img_index)
 
-        if (img_index+1) % args.save_iters == 0 and args.save_iters > 0:
-            np.save(os.path.join(out_dir, '%s.npy' % (img_index+1)), adv)
-            scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (img_index+1)), adv)
+        # if (img_index+1) % args.save_iters == 0 and args.save_iters > 0:
+        #     np.save(os.path.join(out_dir, '%s.npy' % (img_index+1)), adv)
+        #     scipy.misc.imsave(os.path.join(out_dir, '%s.png' % (img_index+1)), adv)
 
     # print("[error] hit max iterations")
     #     if img_index < 100:
