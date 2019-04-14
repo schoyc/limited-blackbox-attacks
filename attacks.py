@@ -31,13 +31,21 @@ IMAGENET_PATH=""
 NUM_LABELS=10
 SIZE = 32
 
+# SESSION INITIALIZATION
+config_sess = tf.ConfigProto()
+config_sess.gpu_options.allow_growth = True
+# config_sess.gpu_options.per_process_gpu_memory_fraction = 0.5
+# sess = tf.Session(config=config_sess)
+sess = tf.InteractiveSession(config=config_sess)
+# sess = tf.InteractiveSession()
+
 def main(args, gpus):
     # SESSION INITIALIZATION
-    config_sess = tf.ConfigProto()
-    config_sess.gpu_options.allow_growth = True
+    # config_sess = tf.ConfigProto()
+    # config_sess.gpu_options.allow_growth = True
     # config_sess.gpu_options.per_process_gpu_memory_fraction = 0.5
     # sess = tf.Session(config=config_sess)
-    sess = tf.InteractiveSession(config=config_sess)
+    # sess = tf.InteractiveSession(config=config_sess)
     # sess = tf.InteractiveSession()
 
     # INITIAL IMAGE AND CLASS SELECTION
