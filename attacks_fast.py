@@ -78,10 +78,10 @@ def main(args, gpus, all_results, main_results, detection_results, results_s, ke
     img_shape = (SIZE, SIZE, NUM_CHANNELS)
 
     x = tf.placeholder(tf.float32, img_shape)
-    target_class_ph = tf.placeholder(tf.int64, shape=())
+    target_class_ph = tf.placeholder(tf.int32, shape=())
 
     eval_logits, eval_preds = model(sess, tf.expand_dims(x, 0))
-    eval_percent_adv = tf.equal(eval_preds[0], target_class_ph)
+    eval_percent_adv = tf.equal(eval_preds[0], tf.cast(target_class_ph, tf.int64))
 
     # TENSORBOARD SETUP
     # empirical_loss = tf.placeholder(dtype=tf.float32, shape=())
@@ -225,9 +225,7 @@ def main(args, gpus, all_results, main_results, detection_results, results_s, ke
             orig_class = args.orig_class
             initial_img = initial_img.astype(np.float32) / 255.0
         else:
-            x, y = x_test[img_index, None][0], y_test[img_index][0]
-            orig_class = y
-            initial_img = x
+            initial_img, orig_class = x_test[img_index, None][0], y_test[img_index][0]
             initial_img = initial_img.astype(np.float32) / 255.0
             print('[info] chose test image (%d) of class (%d)' % (img_index, orig_class))
 
@@ -292,6 +290,7 @@ def main(args, gpus, all_results, main_results, detection_results, results_s, ke
 
             # CHECK IF WE SHOULD STOP
             temp_t = time.time()
+            # print("x", type(x), "target_class_ph", type(target_class_ph))
             padv = sess.run(eval_percent_adv, feed_dict={x: adv, target_class_ph: target_class})
             # print("Processing adv single...")
             detector.process_query(adv, num_queries)
@@ -322,6 +321,7 @@ def main(args, gpus, all_results, main_results, detection_results, results_s, ke
             # SIMPLE MOMENTUM
             g = args.momentum * prev_g + (1.0 - args.momentum) * g
 
+            max_lr = args.max_lr
             # PLATEAU LR ANNEALING
             last_ls.append(l)
             last_ls = last_ls[-args.plateau_length:]
