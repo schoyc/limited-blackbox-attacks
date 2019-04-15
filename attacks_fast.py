@@ -41,7 +41,7 @@ config_sess.gpu_options.allow_growth = True
 sess = tf.InteractiveSession(config=config_sess)
 # sess = tf.InteractiveSession()
 
-def main(args, gpus):
+def main(args, gpus, all_results, main_results, detection_results, results_s, key, idx_range, img_idxs):
     # SESSION INITIALIZATION
     # config_sess = tf.ConfigProto()
     # config_sess.gpu_options.allow_growth = True
@@ -426,7 +426,7 @@ def main(args, gpus):
         print("[detection]: num_queries",  num_queries, "num_detections", num_detections)
         return success, retval, info, detector, distortion
 
-    def run_experiment(args, all_results, main_results, detection_results, results_s, key, idx_range, img_idxs):
+    def run_experiment(args):
         num_iters = []
         results = []
         infos = []
@@ -506,6 +506,8 @@ def main(args, gpus):
         print("Summary so far:")
         for result_s in results_s:
             print(result_s)
+
+    run_experiment(args)
 
 if __name__ == '__main__':
     main()

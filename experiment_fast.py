@@ -136,7 +136,7 @@ def main():
             print("[experiment] %s=%f, %s=%f" % (args.exp_param, val, args.exp_param_2, val_2))
             key = (val, val_2)
 
-            attacks_fast.run_experiment(args, all_results, main_results, detection_results, results_s, key, idx_range, img_idxs)
+            attacks_fast.main(args, gpus, all_results, main_results, detection_results, results_s, key, idx_range, img_idxs)
 
 
     print("Summary:")
