@@ -299,7 +299,7 @@ def main(args, gpus):
         temp_t = time.time()
         padv = sess.run(eval_percent_adv, feed_dict={x: adv})
         # print("Processing adv single...")
-        detector.process_query(adv, num_queries)
+        detector.process(np.expand_dims(adv, axis=0), num_queries)
         # print("Finished...")
         debug_time(temp_t, "Single query check/detect adv")
         if padv == 1 and epsilon <= goal_epsilon:
@@ -361,7 +361,7 @@ def main(args, gpus):
 
             # Detection
             # print("Processing loop query...")
-            detector.process_query(proposed_adv, num_queries)
+            detector.process(np.expand_dims(proposed_adv, axis=0), num_queries)
             # print("Finished...")
 
             if robust_in_top_k(target_class, proposed_adv, k):

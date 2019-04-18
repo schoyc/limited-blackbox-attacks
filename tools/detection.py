@@ -27,13 +27,12 @@ class Detector(object):
         raise NotImplementedError("Must implement your own encode function!")
 
     def process(self, queries, num_queries_so_far):
+        queries = self.encode(queries)
         for query in queries:
             self.process_query(query, num_queries_so_far)
             num_queries_so_far += 1
 
     def process_query(self, query, num_queries_so_far):
-
-        query = np.squeeze(self.encode(query))
 
         if len(self.memory) == 0 and len(self.buffer) < self.K:
             self.buffer.append(query)
@@ -86,14 +85,14 @@ class Detector(object):
 
 class L2Detector(Detector):
     def _init_encoder(self, weights_path):
-        self.encode = lambda x : x.flatten()
+        self.encode = lambda x : x.reshape((x.shape[0], -1))
 
 class SimilarityDetector(Detector):
     def _init_encoder(self, weights_path):
         encoder = cifar10_encoder()
         encoder.load_weights(weights_path, by_name=True)
         self.encoder = encoder
-        self.encode = lambda x : encoder.predict(np.expand_dims(x, axis=0))
+        self.encode = lambda x : encoder.predict(x)
 
 class ExperimentDetectors():
     def __init__(self, active=True):
