@@ -494,11 +494,11 @@ def main(args, gpus, all_results, main_results, detection_results, results_s, ke
 
         main_det_results = {}
         for d_name in detections_success:
-            detection_results[key + (d_name,)] = (detections_success[d_name], detections_failure[d_name])
+            detection_results[key + (d_name,)] = (detections_success[d_name] if d_name in detections_success else None, detections_failure[d_name] if d_name in detections_failure else None)
 
-            mean_detections_success = np.mean(num_detections_success[d_name])
-            mean_detections_failure = np.mean(num_detections_failure[d_name])
-            mean_detections = np.mean(num_detections_success[d_name] + num_detections_failure[d_name])
+            mean_detections_success = np.mean(num_detections_success[d_name]) if d_name in detections_success else None
+            mean_detections_failure = np.mean(num_detections_failure[d_name]) if d_name in detections_failure else None
+            mean_detections = np.mean(num_detections_success[d_name] if d_name in detections_success else [] + num_detections_failure[d_name] if d_name in detections_failure else [])
             main_det_results[d_name] = (mean_detections, mean_detections_success, mean_detections_failure)
 
         main_results[key] = (success_rate, mean_distortion, mean_iters, main_det_results)
