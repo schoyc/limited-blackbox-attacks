@@ -129,7 +129,7 @@ class ExperimentDetectors():
 
 
 class MultiAttackDetectors(ExperimentDetectors):
-    def __init__(self):
+    def __init__(self, active=True, detectors=None):
         detectors = [
             ("sim-k=50-i=1", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5")),
             ("sim-k=25-i=1", SimilarityDetector(threshold=1.26, K=25, weights_path="./encoders/encoder_all.h5")),
