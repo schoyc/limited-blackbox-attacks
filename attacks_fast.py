@@ -215,7 +215,7 @@ def main(args, gpus, all_results, main_results, detection_results, results_s, ke
 
         # Detector
         run_detection = not args.no_detection
-        detector = detection.ExperimentDetectors(active=run_detection)
+        detector = detection.MultiAttackDetectors(active=run_detection)
 
         specified_imgs = args.img_index is not None and args.target_img_index is not None
         img_index = np.random.randint(0, x_test.shape[0]) if not specified_imgs else args.img_index

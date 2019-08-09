@@ -7,11 +7,12 @@ from collections import OrderedDict
 
 class Detector(object):
 
-    def __init__(self, threshold, K=50, size=None, chunk_size=1000, weights_path="./encoder_1.h5"):
+    def __init__(self, threshold, K=50, size=None, chunk_size=1000, weights_path="./encoder_1.h5", ith_query=1):
         self.threshold = threshold
         self.K = K
         self.size = size
         self.num_queries = 0
+        self.ith_query = ith_query
 
         self.buffer = []
         self.memory = []
@@ -26,18 +27,21 @@ class Detector(object):
     def _init_encoder(self, weights_path):
         raise NotImplementedError("Must implement your own encode function!")
 
-    def process(self, queries, num_queries_so_far):
-        queries = self.encode(queries)
+    def process(self, queries, num_queries_so_far, encoded=False):
+        if not encoded:
+            queries = self.encode(queries)
         for query in queries:
             self.process_query(query, num_queries_so_far)
             num_queries_so_far += 1
 
     def process_query(self, query, num_queries_so_far):
+        if self.num_queries % self.ith_query != 0:
+            return
 
         if len(self.memory) == 0 and len(self.buffer) < self.K:
             self.buffer.append(query)
             self.num_queries += 1
-            return False
+            return
 
         k = self.K
         all_dists = []
@@ -95,14 +99,15 @@ class SimilarityDetector(Detector):
         self.encode = lambda x : encoder.predict(x)
 
 class ExperimentDetectors():
-    def __init__(self, active=True):
+    def __init__(self, active=True, detectors=None):
         self.active = active
 
-        detectors = [
-            ("similarity", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5")),
-            ("l2", L2Detector(threshold=5.069, K=50)),
-            ("sim-no-brightness", SimilarityDetector(threshold=1.56, K=50, weights_path="./encoders/encoder_no_brightness.h5")),
-        ]
+        if detectors is None:
+            detectors = [
+                ("similarity", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5")),
+                ("l2", L2Detector(threshold=5.069, K=50)),
+                ("sim-no-brightness", SimilarityDetector(threshold=1.56, K=50, weights_path="./encoders/encoder_no_brightness.h5")),
+            ]
 
         self.detectors = OrderedDict({})
         for d_name, detector in detectors:
@@ -123,6 +128,24 @@ class ExperimentDetectors():
             detector.process_query(query, num_queries_so_far)
 
 
+class MultiAttackDetectors(ExperimentDetectors):
+    def __init__(self):
+        detectors = [
+            ("sim-k=50-i=1", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5")),
+            ("sim-k=25-i=1", SimilarityDetector(threshold=1.26, K=25, weights_path="./encoders/encoder_all.h5")),
+            ("sim-k=10-i=1", SimilarityDetector(threshold=1.02, K=10, weights_path="./encoders/encoder_all.h5")),
+            ("sim-k=50-i=50", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5", ith_query=50)),
+            ("sim-k=50-i=100", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5", ith_query=100)),
+            ("sim-k=10-i=50", SimilarityDetector(threshold=1.02, K=10, weights_path="./encoders/encoder_all.h5", ith_query=50)),
+
+        ]
+        self.encode_once = detectors[0].encode
+        super.__init__(self, detectors=detectors)
+
+
+    def process(self, queries, num_queries_so_far):
+        queries = self.encode_once(queries)
+        super.process(queries, num_queries_so_far)
 
 def cifar10_encoder(encode_dim=256):
     model = Sequential()
