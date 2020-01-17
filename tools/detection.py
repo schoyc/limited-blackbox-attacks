@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, GlobalAveragePooling2D, Activation, InputLayer
 from collections import OrderedDict
 
@@ -131,21 +131,112 @@ class ExperimentDetectors():
 class MultiAttackDetectors(ExperimentDetectors):
     def __init__(self, active=True, detectors=None):
         detectors = [
-            ("sim-k=50-i=1", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5")),
-            ("sim-k=25-i=1", SimilarityDetector(threshold=1.26, K=25, weights_path="./encoders/encoder_all.h5")),
-            ("sim-k=10-i=1", SimilarityDetector(threshold=1.02, K=10, weights_path="./encoders/encoder_all.h5")),
-            ("sim-k=50-i=50", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5", ith_query=50)),
-            ("sim-k=50-i=100", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5", ith_query=100)),
-            ("sim-k=10-i=50", SimilarityDetector(threshold=1.02, K=10, weights_path="./encoders/encoder_all.h5", ith_query=50)),
+            # ("sim-k=50-i=1", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5")),
+            # ("sim-k=25-i=1", SimilarityDetector(threshold=1.26, K=25, weights_path="./encoders/encoder_all.h5")),
+            # ("sim-k=10-i=1", SimilarityDetector(threshold=1.02, K=10, weights_path="./encoders/encoder_all.h5")),
+            # ("sim-k=50-i=50", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5", ith_query=50)),
+            # ("sim-k=50-i=100", SimilarityDetector(threshold=1.44, K=50, weights_path="./encoders/encoder_all.h5", ith_query=100)),
+            # ("sim-k=10-i=50", SimilarityDetector(threshold=1.02, K=10, weights_path="./encoders/encoder_all.h5", ith_query=50)),
 
+            ("PRADA-k=50-t=093", PRADADetector(threshold=0.93))
         ]
-        self.encode_once = detectors[0].encode
+        # self.encode_once = detectors[0].encode
         super.__init__(self, detectors=detectors)
 
 
     def process(self, queries, num_queries_so_far):
-        queries = self.encode_once(queries)
-        super.process(queries, num_queries_so_far)
+        # queries = self.encode_once(queries)
+        # super.process(queries, num_queries_so_far)
+        ExperimentDetectors.process(self, queries, num_queries_so_far)
+
+from scipy.stats import shapiro
+class PRADADetector():
+    def __init__(self, threshold, model_path='./models/cifar10_ResNet20v1_model.h5', num_classes=10, min_D_size=50, clear_after_detection=True):
+        self.model = load_model(model_path)
+        self.num_classes = num_classes
+        self.threshold = threshold
+        self.clear_after_detection = clear_after_detection
+        self.min_D_size = min_D_size
+
+        self.detected_stats = []
+        self.num_queries = 0
+        self.history = []
+        self.detected_dists = []
+        self.W_s = []
+
+        self._init_buffers()
+
+    def _init_buffers(self):
+        num_classes = self.num_classes
+        # D
+        self.D = []
+
+        # G_c
+        self.G_c = [[] for c in range(num_classes)]
+
+        # D_G_c
+        self.D_c = [[] for c in range(num_classes)]
+
+        # T_c
+        self.T_c = [0 for c in range(num_classes)]
+
+        # W
+        self.W = []
+
+    def process(self, queries, num_queries_so_far, encoded=False, c_s=None):
+        if c_s is None:
+            c_s = self.model.predict(queries).argmax(axis=-1)
+
+        for c, query in zip(c_s, queries):
+            self.process_query(query, c, num_queries_so_far)
+            num_queries_so_far += 1
+
+    def process_query(self, query, c, num_queries_so_far):
+        G_c, D_c, T_c = self.G_c[c], self.D_c[c], self.T_c[c]
+        D = self.D
+        if len(G_c) == 0:
+            G_c.append(query)
+            D_c.append(0.)
+        else:
+            d_min = np.min(np.linalg.norm(query - G_c))
+            D.append(d_min)
+
+            if d_min > T_c:
+                G_c.append(query)
+                D_c.append(d_min)
+                D_c = np.array(D_c)
+                T_c = max(T_c, D_c.mean() - D_c.std())
+                self.T_c[c] = T_c
+
+        self.num_queries += 1
+        if len(D) >= self.min_D_size - 1:
+            D = np.array(D)
+            lower, upper = D.mean() - 3 * D.std(), D.mean() + 3 * D.std()
+            D_ = [d for d in D if d >= lower and d <= upper]
+            W, p = shapiro(D_)
+            self.W.append(W)
+
+            is_attack = W < self.threshold
+            if is_attack:
+                self.detected_dists.append(W)
+                self.history.append(self.num_queries)
+                print("[PRADA] Detected:", W)
+
+                if self.clear_after_detection:
+                    self.W_s.append(self.W)
+                    self._init_buffers()
+
+            if len(D) % 1000 == 0:
+                print("[PRADA] Num. queries so far:", self.num_queries)
+
+    def get_detections(self):
+        history = self.history
+        epochs = []
+        for i in range(len(history) - 1):
+            epochs.append(history[i + 1] - history[i])
+
+        return epochs
+
 
 def cifar10_encoder(encode_dim=256):
     model = Sequential()
