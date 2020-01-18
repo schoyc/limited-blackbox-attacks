@@ -141,7 +141,8 @@ class MultiAttackDetectors(ExperimentDetectors):
             ("PRADA-k=50-t=093", PRADADetector(threshold=0.93))
         ]
         # self.encode_once = detectors[0].encode
-        super.__init__(self, detectors=detectors)
+        # super.__init__(self, detectors=detectors)
+        ExperimentDetectors.__init__(self, detectors=detectors)
 
 
     def process(self, queries, num_queries_so_far):
@@ -192,13 +193,16 @@ class PRADADetector():
             num_queries_so_far += 1
 
     def process_query(self, query, c, num_queries_so_far):
+        query = query.reshape((1, -1))
         G_c, D_c, T_c = self.G_c[c], self.D_c[c], self.T_c[c]
         D = self.D
         if len(G_c) == 0:
             G_c.append(query)
             D_c.append(0.)
         else:
-            d_min = np.min(np.linalg.norm(query - G_c))
+            G_c_vec = np.array(G_c)
+            d_min = np.min(np.linalg.norm(query - G_c_vec, axis=-1))
+            # print(np.linalg.norm(query - G_c_vec, axis=-1).shape)
             D.append(d_min)
 
             if d_min > T_c:
@@ -209,14 +213,18 @@ class PRADADetector():
                 self.T_c[c] = T_c
 
         self.num_queries += 1
+        # print(len(D))
         if len(D) >= self.min_D_size - 1:
             D = np.array(D)
             lower, upper = D.mean() - 3 * D.std(), D.mean() + 3 * D.std()
-            D_ = [d for d in D if d >= lower and d <= upper]
+            D_mask = ((D >= lower) & (D <= upper))
+            D_ = D[D_mask]
+            # D_ = [d for d in D if d >= lower and d <= upper]
             W, p = shapiro(D_)
             self.W.append(W)
 
             is_attack = W < self.threshold
+            # print(W, self.num_queries)
             if is_attack:
                 self.detected_dists.append(W)
                 self.history.append(self.num_queries)
@@ -226,8 +234,8 @@ class PRADADetector():
                     self.W_s.append(self.W)
                     self._init_buffers()
 
-            if len(D) % 1000 == 0:
-                print("[PRADA] Num. queries so far:", self.num_queries)
+            if len(D) % 100 == 0:
+                print("[PRADA] Num. queries so far:", self.num_queries, "W:", W, "d_min:", d_min)
 
     def get_detections(self):
         history = self.history
